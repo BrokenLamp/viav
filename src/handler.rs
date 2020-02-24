@@ -33,12 +33,12 @@ impl EventHandler for Handler {
         if new_id != old_id {
             if old_id != 0 {
                 if let Some(channel) = old_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_leave(&mut ctx, guild_id, channel);
+                    voice_events::on_leave(&mut ctx, guild_id, channel, old.unwrap().user_id);
                 }
             }
             if new_id != 0 {
                 if let Some(channel) = new_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_join(&mut ctx, guild_id, channel);
+                    voice_events::on_join(&mut ctx, guild_id, channel, new.user_id);
                 }
             }
         }

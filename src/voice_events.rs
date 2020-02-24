@@ -1,10 +1,8 @@
-use serenity::prelude::RwLock;
+use super::voice_create;
+use super::voice_destroy;
 use serenity::{
-    model::{
-        channel::{ChannelType, GuildChannel},
-        id::GuildId,
-    },
-    prelude::Context,
+    model::{channel::GuildChannel, id::GuildId, prelude::UserId},
+    prelude::{Context, RwLock},
 };
 use std::sync::Arc;
 
@@ -12,41 +10,26 @@ pub fn on_join(
     ctx: &mut Context,
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
+    user_id: UserId,
 ) -> Option<()> {
     println!("JOIN");
-    if voice_channel.read().members(&ctx).ok()?.len() != 1 {
-        return None;
+
+    if voice_channel.read().members(&ctx).ok()?.len() == 1 {
+        voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     }
-    guild_id
-        .create_channel(ctx, |c| {
-            let mut create_channel = c
-                .kind(ChannelType::Voice)
-                .name(voice_channel.read().name.clone())
-                .position((voice_channel.read().position - 1) as u32)
-                .permissions(voice_channel.read().permission_overwrites.clone());
 
-            if let Some(category_id) = voice_channel.read().category_id {
-                create_channel = create_channel.category(category_id);
-            }
-
-            if let Some(user_limit) = voice_channel.read().user_limit {
-                create_channel = create_channel.user_limit(user_limit as u32);
-            }
-
-            create_channel
-        })
-        .ok()?;
     Some(())
 }
 
 pub fn on_leave(
     ctx: &mut Context,
-    _guild_id: GuildId,
+    guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
+    _user_id: UserId,
 ) -> Option<()> {
     println!("LEAVE");
     if voice_channel.read().members(&ctx).ok()?.len() == 0 {
-        voice_channel.read().delete(&ctx).ok()?;
+        voice_destroy::voice_destroy(ctx, guild_id, voice_channel);
     }
     Some(())
 }
