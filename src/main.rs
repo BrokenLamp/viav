@@ -4,17 +4,17 @@ use serenity::framework::standard::{
     CommandResult, StandardFramework,
 };
 use serenity::model::channel::Message;
-use serenity::prelude::{Context, EventHandler};
+use serenity::prelude::Context;
+use std::env;
+
+mod handler;
+mod voice_events;
+
+use handler::Handler;
 
 #[group]
 #[commands(ping)]
 struct General;
-
-use std::env;
-
-struct Handler;
-
-impl EventHandler for Handler {}
 
 fn main() {
     // Login with a bot token from the environment
