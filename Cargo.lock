@@ -1177,6 +1177,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "viav"
 version = "0.1.0"
 dependencies = [
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serenity 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

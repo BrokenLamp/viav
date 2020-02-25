@@ -9,6 +9,8 @@ use serenity::utils::Colour;
 use std::env;
 
 mod handler;
+mod voice_create;
+mod voice_destroy;
 mod voice_events;
 
 use handler::Handler;
