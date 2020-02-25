@@ -12,8 +12,6 @@ pub fn on_join(
     voice_channel: Arc<RwLock<GuildChannel>>,
     user_id: UserId,
 ) -> Option<()> {
-    println!("JOIN");
-
     if voice_channel.read().members(&ctx).ok()?.len() == 1 {
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     }
@@ -27,7 +25,6 @@ pub fn on_leave(
     voice_channel: Arc<RwLock<GuildChannel>>,
     _user_id: UserId,
 ) -> Option<()> {
-    println!("LEAVE");
     if voice_channel.read().members(&ctx).ok()?.len() == 0 {
         voice_destroy::voice_destroy(ctx, guild_id, voice_channel);
     }

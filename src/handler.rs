@@ -28,8 +28,6 @@ impl EventHandler for Handler {
             None => ChannelId(0),
         };
 
-        println!("{} : {}", new_id, old_id);
-
         if new_id != old_id {
             if old_id != 0 {
                 if let Some(channel) = old_id.to_channel(&ctx).unwrap().guild() {
