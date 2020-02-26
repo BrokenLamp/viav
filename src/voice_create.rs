@@ -87,7 +87,7 @@ pub fn voice_create(
                     format!("[` Share Screen `]({})", screen_share_link),
                     true,
                 )
-                .field("Owner", format!("<@{}>", user_id.0), true)
+                .field("Owner", format!("<@{}><:Discord:317067565941653505>", user_id.0), true)
                 .colour(Colour::from_rgb(103, 58, 183))
             })
             .reactions(vec![

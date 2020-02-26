@@ -1,9 +1,11 @@
+use serenity::model::prelude::Reaction;
 use serenity::{
     model::id::{ChannelId, GuildId},
     model::voice::VoiceState,
     prelude::{Context, EventHandler},
 };
 
+use super::deck;
 use super::voice_events;
 
 pub struct Handler;
@@ -40,5 +42,13 @@ impl EventHandler for Handler {
                 }
             }
         }
+    }
+
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        println!("REACTION");
+    }
+
+    fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+        println!("NO REACTION");
     }
 }
