@@ -1,3 +1,4 @@
+use dotenv::dotenv;
 use serenity::client::Client;
 use serenity::framework::standard::{
     macros::{command, group},
@@ -21,6 +22,8 @@ use handler::Handler;
 struct General;
 
 fn main() {
+    dotenv().ok();
+
     println!(include_str!("terminal_start.txt"));
 
     // Login with a bot token from the environment
