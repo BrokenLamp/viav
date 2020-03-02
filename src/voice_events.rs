@@ -7,12 +7,12 @@ use serenity::{
 use std::sync::Arc;
 
 pub fn on_join(
-    ctx: &mut Context,
+    ctx: &Context,
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
     user_id: UserId,
 ) -> Option<()> {
-    if voice_channel.read().members(&ctx).ok()?.len() == 1 {
+    if voice_channel.read().members(ctx).ok()?.len() == 1 {
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     }
 
@@ -20,12 +20,12 @@ pub fn on_join(
 }
 
 pub fn on_leave(
-    ctx: &mut Context,
+    ctx: &Context,
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
     _user_id: UserId,
 ) -> Option<()> {
-    if voice_channel.read().members(&ctx).ok()?.len() == 0 {
+    if voice_channel.read().members(ctx).ok()?.len() == 0 {
         voice_destroy::voice_destroy(ctx, guild_id, voice_channel);
     }
     Some(())

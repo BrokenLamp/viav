@@ -1,7 +1,10 @@
 use serenity::model::prelude::Reaction;
 use serenity::{
-    model::id::{ChannelId, GuildId},
-    model::voice::VoiceState,
+    model::{
+        gateway::{Activity, Ready},
+        id::{ChannelId, GuildId},
+        voice::VoiceState,
+    },
     prelude::{Context, EventHandler},
 };
 
@@ -11,6 +14,10 @@ use super::voice_events;
 pub struct Handler;
 
 impl EventHandler for Handler {
+    fn ready(&self, ctx: Context, _: Ready) {
+        ctx.set_activity(Activity::listening("-viav "));
+    }
+
     fn voice_state_update(
         &self,
         ctx: Context,
@@ -18,7 +25,6 @@ impl EventHandler for Handler {
         old: Option<VoiceState>,
         new: VoiceState,
     ) {
-        let mut ctx = ctx;
         let guild_id = match guild {
             Some(guild_id) => guild_id,
             None => return,
@@ -33,12 +39,12 @@ impl EventHandler for Handler {
         if new_id != old_id {
             if old_id != 0 {
                 if let Some(channel) = old_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_leave(&mut ctx, guild_id, channel, old.unwrap().user_id);
+                    voice_events::on_leave(&ctx, guild_id, channel, old.unwrap().user_id);
                 }
             }
             if new_id != 0 {
                 if let Some(channel) = new_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_join(&mut ctx, guild_id, channel, new.user_id);
+                    voice_events::on_join(&ctx, guild_id, channel, new.user_id);
                 }
             }
         }

@@ -1,3 +1,4 @@
+use core::time::Duration;
 use dotenv::dotenv;
 use serenity::client::Client;
 use serenity::framework::standard::{
@@ -27,7 +28,12 @@ fn main() {
     println!(include_str!("terminal_start.txt"));
 
     // Login with a bot token from the environment
-    let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"), Handler)
+    let mut client =
+        Client::new_with_extras(&env::var("DISCORD_TOKEN").expect("token"), |extras| {
+            extras
+                .event_handler(Handler)
+                .cache_update_timeout(Duration::from_secs(10))
+        })
         .expect("Error creating client");
 
     client.with_framework(

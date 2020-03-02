@@ -5,7 +5,7 @@ use serenity::prelude::RwLock;
 use std::sync::Arc;
 
 pub fn voice_destroy(
-    ctx: &mut Context,
+    ctx: &Context,
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
 ) -> Option<()> {
@@ -21,7 +21,7 @@ pub fn voice_destroy(
             if let Some(topic_id) = split.next() {
                 if let Ok(topic_id) = topic_id.parse::<u64>() {
                     if topic_id == id.0 {
-                        channel_id.delete(&ctx).ok()?;
+                        channel_id.delete(ctx).ok()?;
                         is_viav_channel = true;
                     }
                 }
@@ -30,7 +30,7 @@ pub fn voice_destroy(
     }
 
     if is_viav_channel {
-        voice_channel.read().delete(&ctx).ok()?;
+        voice_channel.read().delete(ctx).ok()?;
         Some(())
     } else {
         None
