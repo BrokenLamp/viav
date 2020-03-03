@@ -17,8 +17,7 @@ mod voice_events;
 use handler::Handler;
 
 #[group]
-#[commands(ping)]
-#[commands(help)]
+#[commands(ping, help)]
 struct General;
 
 fn main() {
