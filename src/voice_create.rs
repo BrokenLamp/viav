@@ -1,5 +1,7 @@
 use lazy_static::lazy_static;
 use serenity::model::channel::ChannelType;
+use serenity::model::channel::ReactionType;
+use serenity::model::prelude::EmojiId;
 use serenity::model::prelude::GuildChannel;
 use serenity::model::prelude::GuildId;
 use serenity::model::prelude::UserId;
@@ -88,7 +90,28 @@ pub fn voice_create(
                 .field("Owner", format!("<@{}>", user_id.0), true)
                 .colour(Colour::from_rgb(103, 58, 183))
             })
-            .reactions(vec!["🔒", "🕵️", "❓"])
+            .reactions(vec![
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471911920566281),
+                    name: Some(String::from("lock")),
+                },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471928739725376),
+                    name: Some(String::from("eye")),
+                },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684470685430448128),
+                    name: Some(String::from("alert")),
+                },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471126130425935),
+                    name: Some(String::from("help")),
+                },
+            ])
         })
         .ok()?
         .pin(&ctx)
