@@ -1,13 +1,12 @@
 use serenity::model::prelude::{ChannelId, GuildChannel, Reaction, ReactionType, User, UserId};
-use serenity::prelude::{Context, RwLock};
-use std::sync::Arc;
+use serenity::prelude::Context;
 
 pub fn on_deck_reaction_add(
     ctx: &Context,
     reaction: &Reaction,
     voice_channel: &mut GuildChannel,
     text_channel: &mut GuildChannel,
-    owner: User,
+    _owner: User,
 ) -> Option<()> {
     let emoji_id = match &reaction.emoji {
         ReactionType::Custom {
@@ -21,7 +20,7 @@ pub fn on_deck_reaction_add(
     match emoji_id {
         // Lock
         684471911920566281 => {
-            voice_channel.edit(ctx, |e| e.user_limit(1)).ok()?;
+            voice_channel.edit(ctx, |e| e.user_limit(1)).ok();
         }
 
         // Eye
@@ -29,7 +28,7 @@ pub fn on_deck_reaction_add(
 
         // Alert
         684470685430448128 => {
-            text_channel.edit(ctx, |e| e.nsfw(true));
+            text_channel.edit(ctx, |e| e.nsfw(true)).ok();
         }
 
         // Help
@@ -46,7 +45,7 @@ pub fn on_deck_reaction_remove(
     reaction: &Reaction,
     voice_channel: &mut GuildChannel,
     text_channel: &mut GuildChannel,
-    owner: User,
+    _owner: User,
 ) -> Option<()> {
     let emoji_id = match &reaction.emoji {
         ReactionType::Custom {
@@ -60,7 +59,7 @@ pub fn on_deck_reaction_remove(
     match emoji_id {
         // Lock
         684471911920566281 => {
-            voice_channel.edit(ctx, |e| e.user_limit(0)).ok()?;
+            voice_channel.edit(ctx, |e| e.user_limit(0)).ok();
         }
 
         // Eye
@@ -68,7 +67,7 @@ pub fn on_deck_reaction_remove(
 
         // Alert
         684470685430448128 => {
-            text_channel.edit(ctx, |e| e.nsfw(false));
+            text_channel.edit(ctx, |e| e.nsfw(false)).ok();
         }
 
         // Help
