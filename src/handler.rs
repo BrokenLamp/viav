@@ -45,10 +45,14 @@ impl EventHandler for Handler {
     }
 
     fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        println!("REACTION");
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
+            deck::on_deck_reaction_add(&ctx, &reaction, &mut vc, &mut tc, owner);
+        }
     }
 
     fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
-        println!("NO REACTION");
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
+            deck::on_deck_reaction_remove(&ctx, &reaction, &mut vc, &mut tc, owner);
+        }
     }
 }
