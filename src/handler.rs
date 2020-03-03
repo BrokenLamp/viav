@@ -30,19 +30,16 @@ impl EventHandler for Handler {
             None => return,
         };
 
-        let new_id: ChannelId = new.channel_id.unwrap_or(ChannelId(0));
-        let old_id: ChannelId = match &old {
-            Some(old_id) => old_id.channel_id.unwrap_or(ChannelId(0)),
-            None => ChannelId(0),
-        };
+        let new_id = new.channel_id;
+        let old_id = old.and_then(|state| state.channel_id);
 
         if new_id != old_id {
-            if old_id != 0 {
+            if let Some(old_id) = old_id {
                 if let Some(channel) = old_id.to_channel(&ctx).unwrap().guild() {
                     voice_events::on_leave(&ctx, guild_id, channel, old.unwrap().user_id);
                 }
             }
-            if new_id != 0 {
+            if let Some(new_id) = new_id {
                 if let Some(channel) = new_id.to_channel(&ctx).unwrap().guild() {
                     voice_events::on_join(&ctx, guild_id, channel, new.user_id);
                 }
