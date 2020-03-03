@@ -9,6 +9,7 @@ use serenity::prelude::Context;
 use serenity::utils::Colour;
 use std::env;
 
+mod deck;
 mod handler;
 mod voice_create;
 mod voice_destroy;

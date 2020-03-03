@@ -1,9 +1,11 @@
+use serenity::model::prelude::Reaction;
 use serenity::{
     model::id::{ChannelId, GuildId},
     model::voice::VoiceState,
     prelude::{Context, EventHandler},
 };
 
+use super::deck;
 use super::voice_events;
 
 pub struct Handler;
@@ -39,6 +41,18 @@ impl EventHandler for Handler {
                     voice_events::on_join(&mut ctx, guild_id, channel, new.user_id);
                 }
             }
+        }
+    }
+
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
+            deck::on_deck_reaction_add(&ctx, &reaction, &mut vc, &mut tc, owner);
+        }
+    }
+
+    fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
+            deck::on_deck_reaction_remove(&ctx, &reaction, &mut vc, &mut tc, owner);
         }
     }
 }

@@ -96,21 +96,21 @@ pub fn voice_create(
                     id: EmojiId(684471911920566281),
                     name: Some(String::from("lock")),
                 },
-                ReactionType::Custom {
-                    animated: false,
-                    id: EmojiId(684471928739725376),
-                    name: Some(String::from("eye")),
-                },
+                // ReactionType::Custom {
+                //     animated: false,
+                //     id: EmojiId(684471928739725376),
+                //     name: Some(String::from("eye")),
+                // },
                 ReactionType::Custom {
                     animated: false,
                     id: EmojiId(684470685430448128),
                     name: Some(String::from("alert")),
                 },
-                ReactionType::Custom {
-                    animated: false,
-                    id: EmojiId(684471126130425935),
-                    name: Some(String::from("help")),
-                },
+                // ReactionType::Custom {
+                //     animated: false,
+                //     id: EmojiId(684471126130425935),
+                //     name: Some(String::from("help")),
+                // },
             ])
         })
         .ok()?
