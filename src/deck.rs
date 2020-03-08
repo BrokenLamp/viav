@@ -105,7 +105,7 @@ pub fn get_deck_reaction_info(
         .to_user(ctx)
         .ok()?;
 
-    let is_channel_owner = owner.id.0 != reaction.user_id.0;
+    let is_channel_owner = owner.id.0 == reaction.user_id.0;
     let is_server_admin = {
         reaction
             .channel(ctx)
