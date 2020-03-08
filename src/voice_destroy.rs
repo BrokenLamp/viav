@@ -9,9 +9,9 @@ pub fn voice_destroy(
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
 ) -> Option<()> {
-    let id = voice_channel.read().id.0;
+    let id = voice_channel.read().id;
 
-    voice_channel.read().delete(&ctx).ok()?;
+    let mut is_viav_channel = false;
 
     let channels = guild_id.channels(&ctx).ok()?;
     for (channel_id, guild_channel) in channels {
@@ -20,13 +20,19 @@ pub fn voice_destroy(
             split.next();
             if let Some(topic_id) = split.next() {
                 if let Ok(topic_id) = topic_id.parse::<u64>() {
-                    if topic_id == id {
+                    if topic_id == id.0 {
                         channel_id.delete(&ctx).ok()?;
+                        is_viav_channel = true;
                     }
                 }
             }
         }
     }
 
-    Some(())
+    if is_viav_channel {
+        voice_channel.read().delete(&ctx).ok()?;
+        Some(())
+    } else {
+        None
+    }
 }
