@@ -2,7 +2,7 @@ use serenity::model::prelude::Reaction;
 use serenity::{
     model::{
         gateway::{Activity, Ready},
-        id::{ChannelId, GuildId},
+        id::GuildId,
         voice::VoiceState,
     },
     prelude::{Context, EventHandler},
@@ -31,7 +31,10 @@ impl EventHandler for Handler {
         };
 
         let new_id = new.channel_id;
-        let old_id = old.and_then(|state| state.channel_id);
+        let old_id = match &old {
+            Some(old_id) => old_id.channel_id,
+            None => None,
+        };
 
         if new_id != old_id {
             if let Some(old_id) = old_id {
