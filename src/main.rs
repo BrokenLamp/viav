@@ -11,6 +11,7 @@ use serenity::utils::Colour;
 use std::env;
 
 mod deck;
+mod deck_actions;
 mod handler;
 mod voice_create;
 mod voice_destroy;

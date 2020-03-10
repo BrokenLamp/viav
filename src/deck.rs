@@ -1,6 +1,8 @@
 use serenity::model::prelude::{ChannelId, GuildChannel, Reaction, ReactionType, User, UserId};
 use serenity::prelude::Context;
 
+use super::deck_actions;
+
 pub fn on_deck_reaction_add(
     ctx: &Context,
     reaction: &Reaction,
