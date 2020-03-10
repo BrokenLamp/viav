@@ -12,7 +12,9 @@ pub fn on_join(
     voice_channel: Arc<RwLock<GuildChannel>>,
     user_id: UserId,
 ) -> Option<()> {
-    if voice_channel.read().members(ctx).ok()?.len() == 1 {
+    let num_members = voice_channel.read().members(ctx).ok()?.len();
+
+    if num_members == 1 {
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     }
 
@@ -25,8 +27,11 @@ pub fn on_leave(
     voice_channel: Arc<RwLock<GuildChannel>>,
     _user_id: UserId,
 ) -> Option<()> {
-    if voice_channel.read().members(ctx).ok()?.len() == 0 {
+    let num_members = voice_channel.read().members(ctx).ok()?.len();
+
+    if num_members == 0 {
         voice_destroy::voice_destroy(ctx, guild_id, voice_channel);
     }
+
     Some(())
 }
