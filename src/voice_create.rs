@@ -12,29 +12,29 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref ID: Mutex<u8> = Mutex::new(0);
+    static ref ID: Mutex<u8> = Mutex::new(250);
 }
 
 pub fn voice_create(
-    ctx: &mut Context,
+    ctx: &Context,
     guild_id: GuildId,
     voice_channel: Arc<RwLock<GuildChannel>>,
     user_id: UserId,
 ) -> Option<()> {
+    let voice_channel = voice_channel.read();
     let channel_type = ChannelType::Voice;
     guild_id
-        .create_channel(&ctx, |c| {
+        .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(channel_type)
-                .name::<&str>(voice_channel.read().name.as_ref())
-                .position((voice_channel.read().position - 1) as u32)
-                .permissions(voice_channel.read().permission_overwrites.clone());
+                .name::<&str>(voice_channel.name.as_ref())
+                .permissions(voice_channel.permission_overwrites.clone());
 
-            if let Some(category_id) = voice_channel.read().category_id {
+            if let Some(category_id) = voice_channel.category_id {
                 create_channel = create_channel.category(category_id);
             }
 
-            if let Some(user_limit) = voice_channel.read().user_limit {
+            if let Some(user_limit) = voice_channel.user_limit {
                 create_channel = create_channel.user_limit(user_limit as u32);
             }
 
@@ -42,43 +42,42 @@ pub fn voice_create(
         })
         .ok()?;
 
-    let mut lock = ID.lock().unwrap();
-    let id = *lock;
-    *lock = lock.overflowing_add(1).0;
-    std::mem::drop(lock);
+    let id = {
+        let mut lock = ID.lock().unwrap();
+        *lock = lock.overflowing_add(1).0;
+        *lock
+    };
 
-    let name = format!("{} / {}", voice_channel.read().name, id);
-    voice_channel
-        .read()
-        .id
-        .edit(&ctx, |c| c.name::<&str>(name.as_ref()))
+    let new_name = format!("{} / {}", voice_channel.name, id);
+    let voice_channel_id = voice_channel.id;
+    voice_channel_id
+        .edit(ctx, |c| c.name::<&str>(new_name.as_ref()))
         .ok()?;
 
     let screen_share_link = format!(
         "https://discordapp.com/channels/{}/{}",
-        guild_id.0,
-        voice_channel.read().id.0
+        guild_id.0, voice_channel.id.0
     );
 
     let channel_type = ChannelType::Text;
     guild_id
-        .create_channel(&ctx, |c| {
+        .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(channel_type)
-                .topic(format!("**Screen Share: {}** - &{}&{}", screen_share_link, voice_channel.read().id.0, user_id.0))
+                .topic(format!("**Screen Share: {}** - &{}&{}", screen_share_link, voice_channel.id.0, user_id.0))
                 .name(format!("voice-viav-{}", id))
-                .permissions(voice_channel.read().permission_overwrites.clone());
+                .permissions(voice_channel.permission_overwrites.clone());
 
-            if let Some(category_id) = voice_channel.read().category_id {
+            if let Some(category_id) = voice_channel.category_id {
                 create_channel = create_channel.category(category_id);
             }
             create_channel
         })
         .ok()?
-        .send_message(&ctx, |m| {
+        .send_message(ctx, |m| {
             m.embed(|e| {
                 e.author(|a| {
-                    a.name(name)
+                    a.name(new_name)
                         .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
                         .url("https://viav.app/")
                 })
@@ -115,7 +114,7 @@ pub fn voice_create(
             ])
         })
         .ok()?
-        .pin(&ctx)
+        .pin(ctx)
         .ok()?;
 
     Some(())
