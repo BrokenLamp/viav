@@ -5,32 +5,18 @@ use serenity::{
 };
 use std::collections::HashMap;
 
-trait ReactionCommand {
-    fn on_add(
-        &self,
-        ctx: &Context,
-        reaction: &Reaction,
-        voice_channel: &mut GuildChannel,
-        text_channel: &mut GuildChannel,
-        _owner: User,
-    ) -> Option<()> {
-        None
-    }
-    fn on_remove(
-        &self,
-        ctx: &Context,
-        reaction: &Reaction,
-        voice_channel: &mut GuildChannel,
-        text_channel: &mut GuildChannel,
-        _owner: User,
-    ) -> Option<()> {
-        None
-    }
+struct Action {
+    on_add: &'static Fn(u64) -> u64,
+    on_remove: &'static Fn(u64) -> u64,
 }
 
-struct Lock;
-impl ReactionCommand for Lock {}
+pub static ACTIONS: HashMap<u64, &'static Action> = make_hashmap();
 
-pub const ACTIONS: HashMap<u64, Box<dyn ReactionCommand>> = hashmap! {
-    684471911920566281u64 => Box::new(Lock) as Box<dyn ReactionCommand>,
-};
+const fn make_hashmap() -> HashMap<u64, &'static Action> {
+    hashmap! {
+        684471911920566281u64 => &Action {
+            on_add: &|x: u64| x,
+            on_remove: &|x: u64| x,
+        },
+    }
+}
