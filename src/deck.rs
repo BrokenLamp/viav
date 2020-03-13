@@ -1,3 +1,4 @@
+use super::MASTER_USER;
 use serenity::model::prelude::{ChannelId, GuildChannel, Reaction, ReactionType, User, UserId};
 use serenity::prelude::Context;
 
@@ -69,7 +70,8 @@ pub fn get_deck_reaction_info(
         .to_user(ctx)
         .ok()?;
 
-    let is_channel_owner = owner.id.0 == reaction.user_id.0;
+    let is_channel_owner = owner.id == reaction.user_id;
+    let is_master_user = MASTER_USER == reaction.user_id;
     let is_server_admin = {
         reaction
             .channel(ctx)
@@ -81,9 +83,9 @@ pub fn get_deck_reaction_info(
             .manage_channels()
     };
 
-    if !is_channel_owner && !is_server_admin {
-        return None;
+    if is_channel_owner || is_server_admin || is_master_user {
+        Some((voice_channel, text_channel, owner))
+    } else {
+        None
     }
-
-    Some((voice_channel, text_channel, owner))
 }

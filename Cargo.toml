@@ -9,5 +9,4 @@ edition = "2018"
 [dependencies]
 dotenv = "0.15.0"
 lazy_static = "1.4.0"
-maplit = "1.0.2"
 serenity = "0.8.0"
