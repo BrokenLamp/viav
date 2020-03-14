@@ -5,7 +5,7 @@ use serenity::framework::standard::{
     macros::{command, group},
     CommandResult, StandardFramework,
 };
-use serenity::model::channel::Message;
+use serenity::model::{channel::Message, id::UserId};
 use serenity::prelude::Context;
 use serenity::utils::Colour;
 use std::env;
@@ -17,6 +17,8 @@ mod voice_destroy;
 mod voice_events;
 
 use handler::Handler;
+
+pub const MASTER_USER: UserId = UserId(222554302793646083);
 
 #[group]
 #[commands(ping, help)]
