@@ -1,6 +1,9 @@
 use lazy_static::lazy_static;
 use serenity::model::channel::ChannelType;
+use serenity::model::channel::PermissionOverwrite;
+use serenity::model::channel::PermissionOverwriteType;
 use serenity::model::channel::ReactionType;
+use serenity::model::permissions::Permissions;
 use serenity::model::prelude::EmojiId;
 use serenity::model::prelude::GuildChannel;
 use serenity::model::prelude::GuildId;
@@ -52,6 +55,15 @@ pub fn voice_create(
     let voice_channel_id = voice_channel.id;
     voice_channel_id
         .edit(ctx, |c| c.name::<&str>(new_name.as_ref()))
+        .ok()?
+        .create_permission(
+            ctx,
+            &PermissionOverwrite {
+                allow: Permissions::MANAGE_CHANNELS | Permissions::MOVE_MEMBERS,
+                deny: Permissions::empty(),
+                kind: PermissionOverwriteType::Member(user_id),
+            },
+        )
         .ok()?;
 
     let screen_share_link = format!(
