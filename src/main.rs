@@ -10,6 +10,7 @@ use serenity::prelude::Context;
 use serenity::utils::Colour;
 use std::env;
 
+mod channel_utils;
 mod deck;
 mod handler;
 mod voice_create;

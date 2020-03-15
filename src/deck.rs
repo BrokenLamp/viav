@@ -1,6 +1,9 @@
 use super::MASTER_USER;
-use serenity::model::prelude::{ChannelId, GuildChannel, Reaction, ReactionType, User, UserId};
+use serenity::model::prelude::{
+    ChannelId, EmojiId, GuildChannel, Message, Reaction, ReactionType, User, UserId,
+};
 use serenity::prelude::Context;
+use serenity::utils::Colour;
 
 pub fn on_deck_reaction(
     ctx: &Context,
@@ -42,6 +45,56 @@ pub fn on_deck_reaction(
     }
 
     Some(())
+}
+
+pub fn create_deck(
+    ctx: &Context,
+    channel: &GuildChannel,
+    deck_name: String,
+    screen_share_link: String,
+    user_id: UserId,
+) -> Option<Message> {
+    channel
+        .send_message(ctx, |m| {
+            m.embed(|e| {
+                e.author(|a| {
+                    a.name(deck_name)
+                        .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
+                        .url("https://viav.app/")
+                })
+                .field(
+                    "Video",
+                    format!("[` Share Screen `]({})", screen_share_link),
+                    true,
+                )
+                .field("Like Viav?", "[` Vote on Top.gg `](https://top.gg/bot/446151195338473485/vote)", true)
+                .field("Owner", format!("<@{}>", user_id.0), true)
+                .colour(Colour::from_rgb(103, 58, 183))
+            })
+            .reactions(vec![
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471911920566281),
+                    name: Some(String::from("lock")),
+                },
+                // ReactionType::Custom {
+                //     animated: false,
+                //     id: EmojiId(684471928739725376),
+                //     name: Some(String::from("eye")),
+                // },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684470685430448128),
+                    name: Some(String::from("alert")),
+                },
+                // ReactionType::Custom {
+                //     animated: false,
+                //     id: EmojiId(684471126130425935),
+                //     name: Some(String::from("help")),
+                // },
+            ])
+        })
+        .ok()
 }
 
 pub fn get_deck_reaction_info(
