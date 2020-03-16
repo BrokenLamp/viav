@@ -1,29 +1,22 @@
 use core::time::Duration;
 use dotenv::dotenv;
 use serenity::client::Client;
-use serenity::framework::standard::{
-    macros::{command, group},
-    CommandResult, StandardFramework,
-};
-use serenity::model::{channel::Message, id::UserId};
-use serenity::prelude::Context;
-use serenity::utils::Colour;
+use serenity::framework::standard::StandardFramework;
+use serenity::model::id::UserId;
 use std::env;
 
 mod channel_utils;
+mod commands;
 mod deck;
 mod handler;
 mod voice_create;
 mod voice_destroy;
 mod voice_events;
 
+use commands::GENERAL_GROUP;
 use handler::Handler;
 
 pub const MASTER_USER: UserId = UserId(222554302793646083);
-
-#[group]
-#[commands(ping, help)]
-struct General;
 
 fn main() {
     dotenv().ok();
@@ -49,27 +42,4 @@ fn main() {
     if let Err(why) = client.start() {
         println!("An error occurred while running the client: {:?}", why);
     }
-}
-
-#[command]
-fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.reply(ctx, "Pong!")?;
-    Ok(())
-}
-
-#[command]
-fn help(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.channel_id.send_message(ctx, |c| {
-        c.embed(|e| {
-            e.author(|a| {
-                a.name("Viav")
-                    .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
-                    .url("https://viav.app/")
-            })
-            .description(include_str!("help.md"))
-            .colour(Colour::from_rgb(103, 58, 183))
-        })
-    })?;
-
-    Ok(())
 }
