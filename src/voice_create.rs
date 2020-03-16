@@ -21,6 +21,10 @@ pub fn voice_create(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
+    if voice_channel.name == "AFK" {
+        return None;
+    }
+
     duplicate_voice_channel(ctx, guild_id, voice_channel)?;
 
     let id = {
