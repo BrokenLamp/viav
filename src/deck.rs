@@ -1,6 +1,7 @@
 use super::MASTER_USER;
 use serenity::model::prelude::{
-    ChannelId, EmojiId, GuildChannel, Message, Reaction, ReactionType, User, UserId,
+    ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
+    Permissions, Reaction, ReactionType, RoleId, User, UserId,
 };
 use serenity::prelude::Context;
 use serenity::utils::Colour;
@@ -30,7 +31,20 @@ pub fn on_deck_reaction(
         }
 
         "eye" => {
-            println!("eye");
+            let permissions = if is_add {
+                PermissionOverwrite {
+                    allow: Permissions::empty(),
+                    deny: Permissions::READ_MESSAGES,
+                    kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
+                }
+            } else {
+                PermissionOverwrite {
+                    allow: Permissions::READ_MESSAGES,
+                    deny: Permissions::empty(),
+                    kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
+                }
+            };
+            voice_channel.create_permission(ctx, &permissions).ok();
         }
 
         "alert" => {
@@ -77,11 +91,11 @@ pub fn create_deck(
                     id: EmojiId(684471911920566281),
                     name: Some(String::from("lock")),
                 },
-                // ReactionType::Custom {
-                //     animated: false,
-                //     id: EmojiId(684471928739725376),
-                //     name: Some(String::from("eye")),
-                // },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471928739725376),
+                    name: Some(String::from("eye")),
+                },
                 ReactionType::Custom {
                     animated: false,
                     id: EmojiId(684470685430448128),
