@@ -59,11 +59,20 @@ pub fn voice_create(
                     screen_share_link, voice_channel.id.0, user_id.0
                 ))
                 .name(format!("voice-viav-{}", id))
-                .permissions(vec![PermissionOverwrite {
-                    allow: Permissions::empty(),
-                    deny: Permissions::READ_MESSAGES,
-                    kind: PermissionOverwriteType::Role(RoleId::from(guild_id.0)),
-                }]);
+                .permissions(vec![
+                    // @everyone
+                    PermissionOverwrite {
+                        allow: Permissions::empty(),
+                        deny: Permissions::READ_MESSAGES,
+                        kind: PermissionOverwriteType::Role(RoleId::from(guild_id.0)),
+                    },
+                    // @Viav
+                    PermissionOverwrite {
+                        allow: Permissions::all(),
+                        deny: Permissions::empty(),
+                        kind: PermissionOverwriteType::Member(ctx.cache.read().user.id),
+                    },
+                ]);
 
             if let Some(category_id) = voice_channel.category_id {
                 create_channel = create_channel.category(category_id);
