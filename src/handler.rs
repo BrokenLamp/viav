@@ -2,7 +2,7 @@ use serenity::model::prelude::Reaction;
 use serenity::{
     model::{
         gateway::{Activity, Ready},
-        id::GuildId,
+        id::{GuildId, UserId},
         voice::VoiceState,
     },
     prelude::{Context, EventHandler},
@@ -30,22 +30,30 @@ impl EventHandler for Handler {
             None => return,
         };
 
-        let new_id = new.channel_id;
-        let old_id = match &old {
-            Some(old_id) => old_id.channel_id,
-            None => None,
+        let (new_id, new_user_id) = (new.channel_id, new.user_id);
+        let (old_id, old_user_id) = match &old {
+            Some(old) => (old.channel_id, old.user_id),
+            None => (None, UserId(0)),
         };
 
         if new_id != old_id {
             if let Some(old_id) = old_id {
-                if let Some(channel) = old_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_leave(&ctx, guild_id, &*channel.read(), old.unwrap().user_id);
-                }
+                old_id
+                    .to_channel(&ctx)
+                    .ok()
+                    .and_then(|channel| channel.guild())
+                    .and_then(|channel| {
+                        voice_events::on_leave(&ctx, guild_id, &*channel.read(), old_user_id)
+                    });
             }
             if let Some(new_id) = new_id {
-                if let Some(channel) = new_id.to_channel(&ctx).unwrap().guild() {
-                    voice_events::on_join(&ctx, guild_id, &*channel.read(), new.user_id);
-                }
+                new_id
+                    .to_channel(&ctx)
+                    .ok()
+                    .and_then(|channel| channel.guild())
+                    .and_then(|channel| {
+                        voice_events::on_join(&ctx, guild_id, &*channel.read(), new_user_id)
+                    });
             }
         }
     }
