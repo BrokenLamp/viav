@@ -34,7 +34,7 @@ fn main() {
 
     client.with_framework(
         StandardFramework::new()
-            .configure(|c| c.prefix("-viav ")) // set the bot's prefix to "~"
+            .configure(|c| c.prefix("-viav "))
             .group(&GENERAL_GROUP),
     );
 

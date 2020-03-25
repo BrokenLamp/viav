@@ -12,7 +12,7 @@ use serenity::prelude::Context;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref ID: Mutex<u8> = Mutex::new(250);
+    static ref ID: Mutex<u8> = Mutex::new(0);
 }
 
 pub fn voice_create(
@@ -21,10 +21,16 @@ pub fn voice_create(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
+    if let Ok(partial_guild) = guild_id.to_partial_guild(ctx) {
+        if partial_guild.afk_channel_id == Some(voice_channel.id) {
+            return None;
+        }
+    }
+
     duplicate_voice_channel(ctx, guild_id, voice_channel)?;
 
     let id = {
-        let mut lock = ID.lock().unwrap();
+        let mut lock = ID.lock().ok()?;
         *lock = lock.overflowing_add(1).0;
         *lock
     };
