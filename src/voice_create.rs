@@ -21,8 +21,8 @@ pub fn voice_create(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
-    if let Ok(partial_guild) = guild_id.to_partial_guild(ctx) {
-        if partial_guild.afk_channel_id == Some(voice_channel.id) {
+    if let Some(guild) = guild_id.to_guild_cached(ctx) {
+        if Some(voice_channel.id) == guild.read().afk_channel_id {
             return None;
         }
     }
