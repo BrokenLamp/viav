@@ -1,3 +1,7 @@
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
 use core::time::Duration;
 use dotenv::dotenv;
 use serenity::client::Client;
@@ -20,6 +24,9 @@ pub const MASTER_USER: UserId = UserId(222554302793646083);
 
 fn main() {
     dotenv().ok();
+
+    pretty_env_logger::init();
+    info!("hello");
 
     println!(include_str!("terminal_start.txt"));
 
