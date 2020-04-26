@@ -1,6 +1,5 @@
-extern crate pretty_env_logger;
-#[macro_use]
 extern crate log;
+extern crate pretty_env_logger;
 
 use core::time::Duration;
 use dotenv::dotenv;
@@ -26,7 +25,6 @@ fn main() {
     dotenv().ok();
 
     pretty_env_logger::init();
-    info!("hello");
 
     println!(include_str!("terminal_start.txt"));
 
@@ -45,8 +43,14 @@ fn main() {
             .group(&GENERAL_GROUP),
     );
 
-    // start listening for events by starting a single shard
-    if let Err(why) = client.start() {
+    let num_shards = env::var("NUM_SHARDS")
+        .ok()
+        .and_then(|x| x.parse::<u64>().ok())
+        .unwrap_or(1u64);
+
+    println!("Shards: {}", num_shards);
+
+    if let Err(why) = client.start_shards(num_shards) {
         println!("An error occurred while running the client: {:?}", why);
     }
 }
