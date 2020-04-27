@@ -15,7 +15,7 @@ pub struct Handler;
 
 impl EventHandler for Handler {
     fn ready(&self, ctx: Context, _: Ready) {
-        ctx.set_activity(Activity::listening("-viav "));
+        ctx.set_activity(Activity::listening("-viav help"));
     }
 
     fn voice_state_update(
