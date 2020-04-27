@@ -87,7 +87,7 @@ pub fn voice_create(
         })
         .ok()?;
 
-    deck::create_deck(ctx, &text_channel, new_name, screen_share_link, user_id)?
+    deck::create_deck(ctx, &text_channel, new_name, user_id)?
         .pin(ctx)
         .ok()?;
 
