@@ -16,6 +16,7 @@ pub struct Handler;
 impl EventHandler for Handler {
     fn ready(&self, ctx: Context, _: Ready) {
         ctx.set_activity(Activity::listening("-viav help"));
+        println!("Shard {} - online", &ctx.shard_id)
     }
 
     fn voice_state_update(
