@@ -8,7 +8,7 @@ use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::Context;
 
 #[group]
-#[commands(ping, help, controls)]
+#[commands(ping, help, info, controls)]
 struct General;
 
 #[command]
