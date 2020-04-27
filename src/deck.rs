@@ -1,3 +1,4 @@
+use super::help;
 use super::MASTER_USER;
 use serenity::model::prelude::{
     ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
@@ -52,7 +53,15 @@ pub fn on_deck_reaction(
         }
 
         "help" => {
-            println!("help");
+            if is_add {
+                help::send_help(&ctx, text_channel.id);
+
+                reaction.delete(&ctx.http).ok();
+
+                let mut my_reaction = reaction.clone();
+                my_reaction.user_id = ctx.cache.read().user.id;
+                my_reaction.delete(&ctx.http).ok();
+            }
         }
 
         _ => {}
@@ -65,7 +74,6 @@ pub fn create_deck(
     ctx: &Context,
     channel: &GuildChannel,
     deck_name: String,
-    screen_share_link: String,
     user_id: UserId,
 ) -> Option<Message> {
     channel
@@ -76,11 +84,6 @@ pub fn create_deck(
                         .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
                         .url("https://viav.app/")
                 })
-                .field(
-                    "Video",
-                    format!("[` Share Screen `]({})", screen_share_link),
-                    true,
-                )
                 .field("Like Viav?", "[` Vote on Top.gg `](https://top.gg/bot/446151195338473485/vote)", true)
                 .field("Owner", format!("<@{}>", user_id.0), true)
                 .colour(Colour::from_rgb(103, 58, 183))
@@ -101,11 +104,11 @@ pub fn create_deck(
                     id: EmojiId(684470685430448128),
                     name: Some(String::from("alert")),
                 },
-                // ReactionType::Custom {
-                //     animated: false,
-                //     id: EmojiId(684471126130425935),
-                //     name: Some(String::from("help")),
-                // },
+                ReactionType::Custom {
+                    animated: false,
+                    id: EmojiId(684471126130425935),
+                    name: Some(String::from("help")),
+                },
             ])
         })
         .ok()

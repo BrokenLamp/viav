@@ -12,6 +12,7 @@ mod channel_utils;
 mod commands;
 mod deck;
 mod handler;
+mod help;
 mod voice_create;
 mod voice_destroy;
 mod voice_events;

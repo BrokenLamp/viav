@@ -1,11 +1,11 @@
 use super::deck;
+use super::help;
 use serenity::framework::standard::{
     macros::{command, group},
     CommandResult,
 };
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::Context;
-use serenity::utils::Colour;
 
 #[group]
 #[commands(ping, help, controls)]
@@ -19,18 +19,15 @@ fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
 
 #[command]
 fn help(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.channel_id.send_message(ctx, |c| {
-        c.embed(|e| {
-            e.author(|a| {
-                a.name("Viav")
-                    .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
-                    .url("https://viav.app/")
-            })
-            .description(include_str!("help.md"))
-            .colour(Colour::from_rgb(103, 58, 183))
-        })
-    })?;
+    help::send_help(ctx, msg.channel_id);
 
+    Ok(())
+}
+
+#[command]
+fn info(ctx: &mut Context, msg: &Message) -> CommandResult {
+    msg.channel_id
+        .send_message(&ctx, |c| c.content(format!("Shard ID: {}", ctx.shard_id)))?;
     Ok(())
 }
 
@@ -45,12 +42,6 @@ fn controls_command(ctx: &Context, msg: &Message) -> Option<()> {
     let channel = &*channel_lock.read();
     let topic = channel.topic.clone()?;
 
-    let screen_share_link = {
-        let start_bytes = topic.find("Share: ")? + 7;
-        let end_bytes = topic.find(" - &")?;
-        &topic[start_bytes..end_bytes]
-    };
-
     let user_id = {
         let mut split = topic.split("&");
         split.next()?;
@@ -58,12 +49,6 @@ fn controls_command(ctx: &Context, msg: &Message) -> Option<()> {
         UserId(split.next()?.parse::<u64>().ok()?)
     };
 
-    deck::create_deck(
-        ctx,
-        channel,
-        "Viav Controls".into(),
-        screen_share_link.into(),
-        user_id,
-    );
+    deck::create_deck(ctx, channel, "Viav Controls".into(), user_id);
     Some(())
 }
