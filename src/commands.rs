@@ -38,9 +38,12 @@ fn controls(ctx: &mut Context, msg: &Message) -> CommandResult {
 }
 
 fn controls_command(ctx: &Context, msg: &Message) -> Option<()> {
-    let channel_lock = msg.channel(ctx)?.guild()?;
-    let channel = &*channel_lock.read();
-    let topic = channel.topic.clone()?;
+    let channel_id = msg.channel_id;
+    let topic = {
+        let channel_lock = msg.channel(ctx)?.guild()?;
+        let channel = &*channel_lock.read();
+        channel.topic.clone()?
+    };
 
     let user_id = {
         let mut split = topic.split("&");
@@ -49,6 +52,6 @@ fn controls_command(ctx: &Context, msg: &Message) -> Option<()> {
         UserId(split.next()?.parse::<u64>().ok()?)
     };
 
-    deck::create_deck(ctx, channel, "Viav Controls".into(), user_id);
+    deck::create_deck(ctx, channel_id, "Viav Controls".into(), user_id);
     Some(())
 }

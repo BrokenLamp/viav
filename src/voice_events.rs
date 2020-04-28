@@ -3,7 +3,7 @@ use serenity::model::channel::PermissionOverwrite;
 use serenity::model::channel::PermissionOverwriteType;
 use serenity::model::permissions::Permissions;
 use serenity::{
-    model::{channel::GuildChannel, id::GuildId, prelude::UserId},
+    model::{channel::GuildChannel, id::GuildId, prelude::*},
     prelude::Context,
 };
 
@@ -38,15 +38,14 @@ pub fn on_join(
 pub fn on_leave(
     ctx: &Context,
     guild_id: GuildId,
-    voice_channel: &GuildChannel,
+    voice_channel_id: ChannelId,
+    num_members: usize,
     user_id: UserId,
 ) -> Option<()> {
-    let num_members = voice_channel.members(ctx).ok()?.len();
-
     if num_members == 0 {
-        voice_destroy::voice_destroy(ctx, guild_id, voice_channel);
+        voice_destroy::voice_destroy(ctx, guild_id, voice_channel_id);
     } else {
-        channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).map(|text_channel| {
+        channel_utils::voice_to_text(ctx, guild_id, voice_channel_id).map(|text_channel| {
             text_channel
                 .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
                 .ok();

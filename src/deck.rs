@@ -72,11 +72,11 @@ pub fn on_deck_reaction(
 
 pub fn create_deck(
     ctx: &Context,
-    channel: &GuildChannel,
+    channel_id: ChannelId,
     deck_name: String,
     user_id: UserId,
 ) -> Option<Message> {
-    channel
+    channel_id
         .send_message(ctx, |m| {
             m.embed(|e| {
                 e.author(|a| {
@@ -122,19 +122,21 @@ pub fn get_deck_reaction_info(
         return None;
     }
 
-    let text_channel = reaction.channel(ctx).ok()?.guild()?.read().clone();
+    let text_channel = { reaction.channel(ctx).ok()?.guild()?.read().clone() };
 
     let topic = text_channel.topic.as_ref()?.clone();
     let mut topic = topic.split("&");
 
     topic.next()?;
 
-    let voice_channel = ChannelId(topic.next()?.parse::<u64>().ok()?)
-        .to_channel(ctx)
-        .ok()?
-        .guild()?
-        .read()
-        .clone();
+    let voice_channel = {
+        ChannelId(topic.next()?.parse::<u64>().ok()?)
+            .to_channel(ctx)
+            .ok()?
+            .guild()?
+            .read()
+            .clone()
+    };
 
     let owner = UserId(topic.next()?.parse::<u64>().ok()?)
         .to_user(ctx)

@@ -43,8 +43,9 @@ impl EventHandler for Handler {
                     .to_channel(&ctx)
                     .ok()
                     .and_then(|channel| channel.guild())
-                    .and_then(|channel| {
-                        voice_events::on_leave(&ctx, guild_id, &*channel.read(), old_user_id)
+                    .and_then(|channel| Some((*channel.read()).members(&ctx).ok()?.len()))
+                    .map(|num_members| {
+                        voice_events::on_leave(&ctx, guild_id, old_id, num_members, old_user_id);
                     });
             }
             if let Some(new_id) = new_id {
@@ -52,8 +53,9 @@ impl EventHandler for Handler {
                     .to_channel(&ctx)
                     .ok()
                     .and_then(|channel| channel.guild())
+                    .map(|channel| (*channel.read()).clone())
                     .and_then(|channel| {
-                        voice_events::on_join(&ctx, guild_id, &*channel.read(), new_user_id)
+                        voice_events::on_join(&ctx, guild_id, &channel, new_user_id)
                     });
             }
         }
