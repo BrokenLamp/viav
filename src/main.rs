@@ -38,6 +38,8 @@ fn main() {
         })
         .expect("Error creating client");
 
+    client.threadpool.set_num_threads(32);
+
     client.with_framework(
         StandardFramework::new()
             .configure(|c| c.prefix("-viav "))
