@@ -1,5 +1,6 @@
 use super::deck;
 use lazy_static::lazy_static;
+use log::trace;
 use serenity::model::channel::ChannelType;
 use serenity::model::channel::PermissionOverwrite;
 use serenity::model::channel::PermissionOverwriteType;
@@ -22,9 +23,11 @@ pub fn voice_create(
     user_id: UserId,
 ) -> Option<()> {
     if let Some(guild) = guild_id.to_guild_cached(ctx) {
+        trace!("lock   voice create 1");
         if Some(voice_channel.id) == guild.read().afk_channel_id {
             return None;
         }
+        trace!("unlock voice create 1");
     }
 
     duplicate_voice_channel(ctx, guild_id, voice_channel)?;
@@ -76,7 +79,12 @@ pub fn voice_create(
                     PermissionOverwrite {
                         allow: Permissions::all(),
                         deny: Permissions::empty(),
-                        kind: PermissionOverwriteType::Member(ctx.cache.read().user.id),
+                        kind: PermissionOverwriteType::Member({
+                            trace!("lock   voice create 2");
+                            let id = ctx.cache.read().user.id;
+                            trace!("unlock voice create 2");
+                            id
+                        }),
                     },
                 ]);
 

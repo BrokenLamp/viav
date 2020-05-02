@@ -1,5 +1,6 @@
 use super::deck;
 use super::help;
+use log::trace;
 use serenity::framework::standard::{
     macros::{command, group},
     CommandResult,
@@ -41,9 +42,11 @@ fn controls_command(ctx: &Context, msg: &Message) -> Option<()> {
     let channel_id = msg.channel_id;
     let topic = {
         let channel_lock = msg.channel(ctx)?.guild()?;
+        trace!("lock   controls command");
         let channel = &*channel_lock.read();
         channel.topic.clone()?
     };
+    trace!("unlock controls command");
 
     let user_id = {
         let mut split = topic.split("&");

@@ -1,5 +1,6 @@
 use super::help;
 use super::MASTER_USER;
+use log::trace;
 use serenity::model::prelude::{
     ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
     Permissions, Reaction, ReactionType, RoleId, User, UserId,
@@ -59,7 +60,10 @@ pub fn on_deck_reaction(
                 reaction.delete(&ctx.http).ok();
 
                 let mut my_reaction = reaction.clone();
+
+                trace!("lock   reaction help");
                 my_reaction.user_id = ctx.cache.read().user.id;
+                trace!("unlock reaction help");
                 my_reaction.delete(&ctx.http).ok();
             }
         }
@@ -122,7 +126,11 @@ pub fn get_deck_reaction_info(
         return None;
     }
 
-    let text_channel = { reaction.channel(ctx).ok()?.guild()?.read().clone() };
+    let text_channel = {
+        trace!("lock   get deck reaction info 1");
+        reaction.channel(ctx).ok()?.guild()?.read().clone()
+    };
+    trace!("unlock get deck reaction info 1");
 
     let topic = text_channel.topic.as_ref()?.clone();
     let mut topic = topic.split("&");
@@ -130,6 +138,7 @@ pub fn get_deck_reaction_info(
     topic.next()?;
 
     let voice_channel = {
+        trace!("lock   get deck reaction info 2");
         ChannelId(topic.next()?.parse::<u64>().ok()?)
             .to_channel(ctx)
             .ok()?
@@ -137,6 +146,7 @@ pub fn get_deck_reaction_info(
             .read()
             .clone()
     };
+    trace!("unlock get deck reaction info 2");
 
     let owner = UserId(topic.next()?.parse::<u64>().ok()?)
         .to_user(ctx)
@@ -145,6 +155,7 @@ pub fn get_deck_reaction_info(
     let is_channel_owner = owner.id == reaction.user_id;
     let is_master_user = MASTER_USER == reaction.user_id;
     let is_server_admin = {
+        trace!("lock   get deck reaction info 3");
         reaction
             .channel(ctx)
             .ok()?
@@ -154,6 +165,7 @@ pub fn get_deck_reaction_info(
             .ok()?
             .manage_channels()
     };
+    trace!("unlock get deck reaction info 3");
 
     if is_channel_owner || is_server_admin || is_master_user {
         Some((voice_channel, text_channel, owner))

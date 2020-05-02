@@ -3,6 +3,7 @@ extern crate pretty_env_logger;
 
 use core::time::Duration;
 use dotenv::dotenv;
+use log::trace;
 use serenity::client::Client;
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::UserId;
@@ -52,6 +53,8 @@ fn main() {
         .unwrap_or(1u64);
 
     println!("Shards: {}", num_shards);
+
+    trace!("Starting Viav");
 
     if let Err(why) = client.start_shards(num_shards) {
         println!("An error occurred while running the client: {:?}", why);

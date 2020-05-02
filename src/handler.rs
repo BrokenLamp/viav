@@ -1,3 +1,6 @@
+use super::deck;
+use super::voice_events;
+use log::trace;
 use serenity::model::prelude::Reaction;
 use serenity::{
     model::{
@@ -7,9 +10,6 @@ use serenity::{
     },
     prelude::{Context, EventHandler},
 };
-
-use super::deck;
-use super::voice_events;
 
 pub struct Handler;
 
@@ -43,8 +43,12 @@ impl EventHandler for Handler {
                     .to_channel(&ctx)
                     .ok()
                     .and_then(|channel| channel.guild())
-                    .and_then(|channel| Some((*channel.read()).members(&ctx).ok()?.len()))
+                    .and_then(|channel| {
+                        trace!("lock   voice state update old");
+                        Some((*channel.read()).members(&ctx).ok()?.len())
+                    })
                     .map(|num_members| {
+                        trace!("unlock voice state update old");
                         voice_events::on_leave(&ctx, guild_id, old_id, num_members, old_user_id);
                     });
             }
@@ -53,8 +57,12 @@ impl EventHandler for Handler {
                     .to_channel(&ctx)
                     .ok()
                     .and_then(|channel| channel.guild())
-                    .map(|channel| (*channel.read()).clone())
+                    .map(|channel| {
+                        trace!("lock   voice state update new");
+                        (*channel.read()).clone()
+                    })
                     .and_then(|channel| {
+                        trace!("unlock voice state update new");
                         voice_events::on_join(&ctx, guild_id, &channel, new_user_id)
                     });
             }
