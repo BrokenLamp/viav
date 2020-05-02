@@ -1,6 +1,6 @@
 use super::deck;
 use super::voice_events;
-use log::trace;
+use log::{info, trace};
 use serenity::model::prelude::Reaction;
 use serenity::{
     model::{
@@ -16,7 +16,7 @@ pub struct Handler;
 impl EventHandler for Handler {
     fn ready(&self, ctx: Context, _: Ready) {
         ctx.set_activity(Activity::listening("-viav help"));
-        println!("Shard {} - online", &ctx.shard_id)
+        info!("Shard {} - online", ctx.shard_id);
     }
 
     fn voice_state_update(

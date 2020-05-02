@@ -155,17 +155,18 @@ pub fn get_deck_reaction_info(
     let is_channel_owner = owner.id == reaction.user_id;
     let is_master_user = MASTER_USER == reaction.user_id;
     let is_server_admin = {
-        trace!("lock   get deck reaction info 3");
-        reaction
-            .channel(ctx)
-            .ok()?
-            .guild()?
-            .read()
-            .permissions_for_user(ctx, reaction.user_id)
-            .ok()?
-            .manage_channels()
+        let perms = {
+            trace!("lock   get deck reaction info 3");
+            reaction
+                .channel(ctx)
+                .ok()?
+                .guild()?
+                .read()
+                .permissions_for_user(ctx, reaction.user_id)
+        };
+        trace!("unlock get deck reaction info 3");
+        perms.ok()?.manage_channels()
     };
-    trace!("unlock get deck reaction info 3");
 
     if is_channel_owner || is_server_admin || is_master_user {
         Some((voice_channel, text_channel, owner))
