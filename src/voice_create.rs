@@ -5,6 +5,7 @@ use serenity::model::channel::ChannelType;
 use serenity::model::channel::PermissionOverwrite;
 use serenity::model::channel::PermissionOverwriteType;
 use serenity::model::permissions::Permissions;
+use serenity::model::prelude::Channel;
 use serenity::model::prelude::GuildChannel;
 use serenity::model::prelude::GuildId;
 use serenity::model::prelude::RoleId;
@@ -28,6 +29,10 @@ pub fn voice_create(
             return None;
         }
         trace!("unlock voice create 1");
+    }
+
+    if voice_channel.name.starts_with("&") {
+        return None;
     }
 
     duplicate_voice_channel(ctx, guild_id, voice_channel)?;
