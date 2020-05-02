@@ -115,7 +115,8 @@ fn duplicate_voice_channel(
             let mut create_channel = c
                 .kind(ChannelType::Voice)
                 .name::<&str>(voice_channel.name.as_ref())
-                .permissions(voice_channel.permission_overwrites.clone());
+                .permissions(voice_channel.permission_overwrites.clone())
+                .bitrate(voice_channel.bitrate.unwrap_or(64) as u32);
 
             if let Some(category_id) = voice_channel.category_id {
                 create_channel = create_channel.category(category_id);
