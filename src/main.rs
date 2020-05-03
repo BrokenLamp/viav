@@ -22,6 +22,7 @@ use commands::GENERAL_GROUP;
 use handler::Handler;
 
 pub const MASTER_USER: UserId = UserId(222554302793646083);
+pub const THREADS: usize = 512;
 
 fn main() {
     dotenv().ok();
@@ -39,7 +40,7 @@ fn main() {
         })
         .expect("Error creating client");
 
-    client.threadpool.set_num_threads(32);
+    client.threadpool.set_num_threads(THREADS);
 
     client.with_framework(
         StandardFramework::new()

@@ -5,7 +5,6 @@ use serenity::model::channel::ChannelType;
 use serenity::model::channel::PermissionOverwrite;
 use serenity::model::channel::PermissionOverwriteType;
 use serenity::model::permissions::Permissions;
-use serenity::model::prelude::Channel;
 use serenity::model::prelude::GuildChannel;
 use serenity::model::prelude::GuildId;
 use serenity::model::prelude::RoleId;
