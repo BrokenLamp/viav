@@ -1,9 +1,12 @@
 use super::{channel_utils, voice_create, voice_destroy};
-use serenity::model::channel::PermissionOverwrite;
-use serenity::model::channel::PermissionOverwriteType;
-use serenity::model::permissions::Permissions;
+use log::trace;
 use serenity::{
-    model::{channel::GuildChannel, id::GuildId, prelude::*},
+    model::{
+        channel::{GuildChannel, PermissionOverwrite, PermissionOverwriteType},
+        id::GuildId,
+        permissions::Permissions,
+        prelude::*,
+    },
     prelude::Context,
 };
 
@@ -19,6 +22,7 @@ pub fn on_join(
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     } else {
         channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).map(|text_channel| {
+            trace!("create permission start");
             text_channel
                 .create_permission(
                     ctx,
@@ -29,6 +33,7 @@ pub fn on_join(
                     },
                 )
                 .ok();
+            trace!("create permission end");
         })?;
     }
 
