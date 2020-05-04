@@ -1,5 +1,6 @@
 use super::help;
 use super::MASTER_USER;
+use crate::channel_utils::TopicData;
 use log::trace;
 use serenity::model::prelude::{
     ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
@@ -36,15 +37,26 @@ pub fn on_deck_reaction(
             let permissions = if is_add {
                 PermissionOverwrite {
                     allow: Permissions::empty(),
-                    deny: Permissions::READ_MESSAGES,
+                    deny: Permissions::READ_MESSAGES | Permissions::CONNECT,
                     kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
                 }
             } else {
-                PermissionOverwrite {
-                    allow: Permissions::READ_MESSAGES,
-                    deny: Permissions::empty(),
-                    kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
-                }
+                text_channel
+                    .topic
+                    .as_ref()
+                    .and_then(|topic| {
+                        let topic_data = TopicData::from_string(topic)?;
+                        Some(PermissionOverwrite {
+                            allow: topic_data.allow,
+                            deny: topic_data.deny,
+                            kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
+                        })
+                    })
+                    .unwrap_or(PermissionOverwrite {
+                        allow: Permissions::READ_MESSAGES,
+                        deny: Permissions::empty(),
+                        kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
+                    })
             };
             voice_channel.create_permission(ctx, &permissions).ok();
         }

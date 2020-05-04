@@ -1,4 +1,5 @@
 use super::deck;
+use crate::channel_utils::TopicData;
 use lazy_static::lazy_static;
 use log::trace;
 use serenity::model::channel::ChannelType;
@@ -22,6 +23,7 @@ pub fn voice_create(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
+    trace!("voice_create start");
     if let Some(guild) = guild_id.to_guild_cached(ctx) {
         trace!("lock   voice create 1");
         if Some(voice_channel.id) == guild.read().afk_channel_id {
@@ -29,18 +31,23 @@ pub fn voice_create(
         }
         trace!("unlock voice create 1");
     }
+    trace!("out of guild_cached");
 
     if voice_channel.name.starts_with("&") {
         return None;
     }
 
+    trace!("doesn't start with &");
+
     duplicate_voice_channel(ctx, guild_id, voice_channel)?;
 
     let id = {
+        trace!("lock   id");
         let mut lock = ID.lock().ok()?;
         *lock = lock.overflowing_add(1).0;
         *lock
     };
+    trace!("unlock id");
 
     let new_name = format!("{} / {}", voice_channel.name, id);
     let voice_channel_id = voice_channel.id;
@@ -57,20 +64,26 @@ pub fn voice_create(
         )
         .ok()?;
 
-    let screen_share_link = format!(
-        "https://discordapp.com/channels/{}/{}",
-        guild_id.0, voice_channel.id.0
-    );
+    trace!("get default perms");
+    let default_perms = (&voice_channel.permission_overwrites)
+        .into_iter()
+        .find(|p| p.kind == PermissionOverwriteType::Role(RoleId(guild_id.0)))?;
 
+    trace!("construct topic data");
+    let topic_data = TopicData {
+        voice_channel: voice_channel_id,
+        owner: user_id,
+        allow: default_perms.allow,
+        deny: default_perms.deny,
+    };
+
+    trace!("create text channel");
     let channel_type = ChannelType::Text;
     let text_channel = guild_id
         .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(channel_type)
-                .topic(format!(
-                    "**Screen Share: {}** - &{}&{}",
-                    screen_share_link, voice_channel.id.0, user_id.0
-                ))
+                .topic(format!("Viav - {}", topic_data.to_string()))
                 .name(format!("voice-viav-{}", id))
                 .permissions(vec![
                     // @everyone
@@ -98,11 +111,12 @@ pub fn voice_create(
             create_channel
         })
         .ok()?;
-
+    trace!("create deck");
     deck::create_deck(ctx, text_channel.id, new_name, user_id)?
         .pin(ctx)
         .ok()?;
 
+    trace!("set channel perms");
     text_channel
         .create_permission(
             ctx,
@@ -114,6 +128,8 @@ pub fn voice_create(
         )
         .ok()?;
 
+    trace!("voice_create end");
+
     Some(())
 }
 
@@ -122,7 +138,8 @@ fn duplicate_voice_channel(
     guild_id: GuildId,
     voice_channel: &GuildChannel,
 ) -> Option<GuildChannel> {
-    guild_id
+    trace!("duplicate_voice_channel start");
+    let channel = guild_id
         .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(ChannelType::Voice)
@@ -140,5 +157,7 @@ fn duplicate_voice_channel(
 
             create_channel
         })
-        .ok()
+        .ok();
+    trace!("duplicate_voice_channel end");
+    channel
 }

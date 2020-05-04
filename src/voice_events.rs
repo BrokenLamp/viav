@@ -16,11 +16,15 @@ pub fn on_join(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
+    trace!("on_join start");
     let num_members = voice_channel.members(ctx).ok()?.len();
+    trace!("got members");
 
     if num_members == 1 {
+        trace!("num_members == 1");
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
     } else {
+        trace!("num_members != 1");
         channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).map(|text_channel| {
             trace!("create permission start");
             text_channel
@@ -36,6 +40,8 @@ pub fn on_join(
             trace!("create permission end");
         })?;
     }
+
+    trace!("on_join end");
 
     Some(())
 }
