@@ -1,6 +1,6 @@
 use serenity::{model::prelude::*, prelude::*, utils::Colour};
 
-pub fn send_help(ctx: &Context, channel_id: ChannelId) -> Option<Message> {
+pub async fn send_help(ctx: &Context, channel_id: ChannelId) -> Option<Message> {
     channel_id.send_message(&ctx, |c| {
         c.embed(|e| {
             e.author(|a| {
@@ -16,5 +16,7 @@ pub fn send_help(ctx: &Context, channel_id: ChannelId) -> Option<Message> {
             .field("Contribute", "Enjoying Viav? Consider [**donating**](https://donatebot.io/checkout/450361438549311499) or [**voting**](https://top.gg/bot/446151195338473485/vote) for us on top.gg.", false)
             .colour(Colour::from_rgb(103, 58, 183))
         })
-    }).ok()
+    })
+    .await
+    .ok()
 }

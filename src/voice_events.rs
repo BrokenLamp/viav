@@ -10,22 +10,23 @@ use serenity::{
     prelude::Context,
 };
 
-pub fn on_join(
+pub async fn on_join(
     ctx: &Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
-    trace!("on_join start");
-    let num_members = voice_channel.members(ctx).ok()?.len();
-    trace!("got members");
+    let num_members = voice_channel.members(ctx).await.ok()?.len();
+    trace!("{}", num_members);
 
     if num_members == 1 {
         trace!("num_members == 1");
-        voice_create::voice_create(ctx, guild_id, voice_channel, user_id)?;
+        voice_create::voice_create(ctx, guild_id, voice_channel, user_id).await?;
     } else {
         trace!("num_members != 1");
-        channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).map(|text_channel| {
+        if let Some(text_channel) =
+            channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
+        {
             trace!("create permission start");
             text_channel
                 .create_permission(
@@ -36,9 +37,10 @@ pub fn on_join(
                         kind: PermissionOverwriteType::Member(user_id),
                     },
                 )
+                .await
                 .ok();
             trace!("create permission end");
-        })?;
+        }
     }
 
     trace!("on_join end");
@@ -46,21 +48,26 @@ pub fn on_join(
     Some(())
 }
 
-pub fn on_leave(
+pub async fn on_leave(
     ctx: &Context,
     guild_id: GuildId,
-    voice_channel_id: ChannelId,
-    num_members: usize,
+    voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
+    let num_members = voice_channel.members(ctx).await.ok()?.len();
+    trace!("{}", num_members);
+
     if num_members == 0 {
-        voice_destroy::voice_destroy(ctx, guild_id, voice_channel_id);
+        voice_destroy::voice_destroy(ctx, guild_id, voice_channel.id).await;
     } else {
-        channel_utils::voice_to_text(ctx, guild_id, voice_channel_id).map(|text_channel| {
+        if let Some(text_channel) =
+            channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
+        {
             text_channel
                 .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
+                .await
                 .ok();
-        })?;
+        }
     }
 
     Some(())

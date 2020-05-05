@@ -1,6 +1,7 @@
 use super::deck;
 use super::voice_events;
-use log::{info, trace};
+use async_trait::async_trait;
+use log::info;
 use serenity::model::prelude::Reaction;
 use serenity::{
     model::{
@@ -13,13 +14,14 @@ use serenity::{
 
 pub struct Handler;
 
+#[async_trait]
 impl EventHandler for Handler {
-    fn ready(&self, ctx: Context, _: Ready) {
-        ctx.set_activity(Activity::listening("-viav help"));
+    async fn ready(&self, ctx: Context, _: Ready) {
+        ctx.set_activity(Activity::listening("-viav help")).await;
         info!("Shard {} - online", ctx.shard_id);
     }
 
-    fn voice_state_update(
+    async fn voice_state_update(
         &self,
         ctx: Context,
         guild: Option<GuildId>,
@@ -39,45 +41,37 @@ impl EventHandler for Handler {
 
         if new_id != old_id {
             if let Some(old_id) = old_id {
-                old_id
+                let guild_channel = old_id
                     .to_channel(&ctx)
+                    .await
                     .ok()
-                    .and_then(|channel| channel.guild())
-                    .and_then(|channel| {
-                        trace!("lock   voice state update old");
-                        Some((*channel.read()).members(&ctx).ok()?.len())
-                    })
-                    .map(|num_members| {
-                        trace!("unlock voice state update old");
-                        voice_events::on_leave(&ctx, guild_id, old_id, num_members, old_user_id);
-                    });
+                    .and_then(|channel| channel.guild());
+                if let Some(guild_channel) = guild_channel {
+                    voice_events::on_leave(&ctx, guild_id, &guild_channel, old_user_id).await;
+                }
             }
             if let Some(new_id) = new_id {
-                new_id
+                let guild_channel = new_id
                     .to_channel(&ctx)
+                    .await
                     .ok()
-                    .and_then(|channel| channel.guild())
-                    .map(|channel| {
-                        trace!("lock   voice state update new");
-                        (*channel.read()).clone()
-                    })
-                    .and_then(|channel| {
-                        trace!("unlock voice state update new");
-                        voice_events::on_join(&ctx, guild_id, &channel, new_user_id)
-                    });
+                    .and_then(|channel| channel.guild());
+                if let Some(guild_channel) = guild_channel {
+                    voice_events::on_join(&ctx, guild_id, &guild_channel, new_user_id).await;
+                }
             }
         }
     }
 
-    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
-            deck::on_deck_reaction(&ctx, &reaction, true, &mut vc, &mut tc, owner);
+    async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction).await {
+            deck::on_deck_reaction(&ctx, &reaction, true, &mut vc, &mut tc, owner).await;
         }
     }
 
-    fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
-        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction) {
-            deck::on_deck_reaction(&ctx, &reaction, false, &mut vc, &mut tc, owner);
+    async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction).await {
+            deck::on_deck_reaction(&ctx, &reaction, false, &mut vc, &mut tc, owner).await;
         }
     }
 }
