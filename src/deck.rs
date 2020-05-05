@@ -1,7 +1,6 @@
 use super::help;
 use super::MASTER_USER;
 use crate::channel_utils::TopicData;
-use log::trace;
 use serenity::model::prelude::{
     ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
     Permissions, Reaction, ReactionType, RoleId, User, UserId,
@@ -9,7 +8,7 @@ use serenity::model::prelude::{
 use serenity::prelude::Context;
 use serenity::utils::Colour;
 
-pub fn on_deck_reaction(
+pub async fn on_deck_reaction(
     ctx: &Context,
     reaction: &Reaction,
     is_add: bool,
@@ -30,6 +29,7 @@ pub fn on_deck_reaction(
         "lock" => {
             voice_channel
                 .edit(ctx, |e| e.user_limit(is_add as u64))
+                .await
                 .ok();
         }
 
@@ -58,25 +58,26 @@ pub fn on_deck_reaction(
                         kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
                     })
             };
-            voice_channel.create_permission(ctx, &permissions).ok();
+            voice_channel
+                .create_permission(ctx, &permissions)
+                .await
+                .ok();
         }
 
         "alert" => {
-            text_channel.edit(ctx, |e| e.nsfw(is_add)).ok();
+            text_channel.edit(ctx, |e| e.nsfw(is_add)).await.ok();
         }
 
         "help" => {
             if is_add {
-                help::send_help(&ctx, text_channel.id);
+                help::send_help(&ctx, text_channel.id).await;
 
-                reaction.delete(&ctx.http).ok();
+                reaction.delete(&ctx.http).await.ok();
 
                 let mut my_reaction = reaction.clone();
 
-                trace!("lock   reaction help");
-                my_reaction.user_id = ctx.cache.read().user.id;
-                trace!("unlock reaction help");
-                my_reaction.delete(&ctx.http).ok();
+                my_reaction.user_id = ctx.cache.read().await.user.id;
+                my_reaction.delete(&ctx.http).await.ok();
             }
         }
 
@@ -86,7 +87,7 @@ pub fn on_deck_reaction(
     Some(())
 }
 
-pub fn create_deck(
+pub async fn create_deck(
     ctx: &Context,
     channel_id: ChannelId,
     deck_name: String,
@@ -127,22 +128,19 @@ pub fn create_deck(
                 },
             ])
         })
+        .await
         .ok()
 }
 
-pub fn get_deck_reaction_info(
+pub async fn get_deck_reaction_info(
     ctx: &Context,
     reaction: &Reaction,
 ) -> Option<(GuildChannel, GuildChannel, User)> {
-    if reaction.user(ctx).ok()?.bot {
+    if reaction.user(ctx).await.ok()?.bot {
         return None;
     }
 
-    let text_channel = {
-        trace!("lock   get deck reaction info 1");
-        reaction.channel(ctx).ok()?.guild()?.read().clone()
-    };
-    trace!("unlock get deck reaction info 1");
+    let text_channel = { reaction.channel(ctx).await.ok()?.guild()? };
 
     let topic = text_channel.topic.as_ref()?.clone();
     let mut topic = topic.split("&");
@@ -150,34 +148,30 @@ pub fn get_deck_reaction_info(
     topic.next()?;
 
     let voice_channel = {
-        trace!("lock   get deck reaction info 2");
         ChannelId(topic.next()?.parse::<u64>().ok()?)
             .to_channel(ctx)
+            .await
             .ok()?
             .guild()?
-            .read()
-            .clone()
     };
-    trace!("unlock get deck reaction info 2");
 
     let owner = UserId(topic.next()?.parse::<u64>().ok()?)
         .to_user(ctx)
+        .await
         .ok()?;
 
     let is_channel_owner = owner.id == reaction.user_id;
     let is_master_user = MASTER_USER == reaction.user_id;
     let is_server_admin = {
-        let perms = {
-            trace!("lock   get deck reaction info 3");
-            reaction
-                .channel(ctx)
-                .ok()?
-                .guild()?
-                .read()
-                .permissions_for_user(ctx, reaction.user_id)
-        };
-        trace!("unlock get deck reaction info 3");
-        perms.ok()?.manage_channels()
+        reaction
+            .channel(ctx)
+            .await
+            .ok()?
+            .guild()?
+            .permissions_for_user(ctx, reaction.user_id)
+            .await
+            .ok()?
+            .manage_channels()
     };
 
     if is_channel_owner || is_server_admin || is_master_user {

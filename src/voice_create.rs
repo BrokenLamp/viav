@@ -17,19 +17,17 @@ lazy_static! {
     static ref ID: Mutex<u8> = Mutex::new(0);
 }
 
-pub fn voice_create(
+pub async fn voice_create(
     ctx: &Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
     trace!("voice_create start");
-    if let Some(guild) = guild_id.to_guild_cached(ctx) {
-        trace!("lock   voice create 1");
-        if Some(voice_channel.id) == guild.read().afk_channel_id {
+    if let Some(guild) = guild_id.to_guild_cached(ctx).await {
+        if Some(voice_channel.id) == guild.read().await.afk_channel_id {
             return None;
         }
-        trace!("unlock voice create 1");
     }
     trace!("out of guild_cached");
 
@@ -39,7 +37,7 @@ pub fn voice_create(
 
     trace!("doesn't start with &");
 
-    duplicate_voice_channel(ctx, guild_id, voice_channel)?;
+    duplicate_voice_channel(ctx, guild_id, voice_channel).await?;
 
     let id = {
         trace!("lock   id");
@@ -53,6 +51,7 @@ pub fn voice_create(
     let voice_channel_id = voice_channel.id;
     voice_channel_id
         .edit(ctx, |c| c.name::<&str>(new_name.as_ref()))
+        .await
         .ok()?
         .create_permission(
             ctx,
@@ -62,6 +61,7 @@ pub fn voice_create(
                 kind: PermissionOverwriteType::Member(user_id),
             },
         )
+        .await
         .ok()?;
 
     trace!("get default perms");
@@ -81,41 +81,40 @@ pub fn voice_create(
 
     trace!("create text channel");
     let channel_type = ChannelType::Text;
+    let permissions = vec![
+        // @everyone
+        PermissionOverwrite {
+            allow: Permissions::empty(),
+            deny: Permissions::READ_MESSAGES,
+            kind: PermissionOverwriteType::Role(RoleId::from(guild_id.0)),
+        },
+        // @Viav
+        PermissionOverwrite {
+            allow: Permissions::all(),
+            deny: Permissions::empty(),
+            kind: PermissionOverwriteType::Member(ctx.cache.read().await.user.id),
+        },
+    ];
     let text_channel = guild_id
         .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(channel_type)
                 .topic(format!("Viav - {}", topic_data.to_string()))
                 .name(format!("voice-viav-{}", id))
-                .permissions(vec![
-                    // @everyone
-                    PermissionOverwrite {
-                        allow: Permissions::empty(),
-                        deny: Permissions::READ_MESSAGES,
-                        kind: PermissionOverwriteType::Role(RoleId::from(guild_id.0)),
-                    },
-                    // @Viav
-                    PermissionOverwrite {
-                        allow: Permissions::all(),
-                        deny: Permissions::empty(),
-                        kind: PermissionOverwriteType::Member({
-                            trace!("lock   voice create 2");
-                            let id = ctx.cache.read().user.id;
-                            trace!("unlock voice create 2");
-                            id
-                        }),
-                    },
-                ]);
+                .permissions(permissions);
 
             if let Some(category_id) = voice_channel.category_id {
                 create_channel = create_channel.category(category_id);
             }
             create_channel
         })
+        .await
         .ok()?;
     trace!("create deck");
-    deck::create_deck(ctx, text_channel.id, new_name, user_id)?
+    deck::create_deck(ctx, text_channel.id, new_name, user_id)
+        .await?
         .pin(ctx)
+        .await
         .ok()?;
 
     trace!("set channel perms");
@@ -128,6 +127,7 @@ pub fn voice_create(
                 kind: PermissionOverwriteType::Member(user_id),
             },
         )
+        .await
         .ok()?;
 
     trace!("voice_create end");
@@ -135,7 +135,7 @@ pub fn voice_create(
     Some(())
 }
 
-fn duplicate_voice_channel(
+async fn duplicate_voice_channel(
     ctx: &Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
@@ -159,6 +159,7 @@ fn duplicate_voice_channel(
 
             create_channel
         })
+        .await
         .ok();
     trace!("duplicate_voice_channel end");
     channel

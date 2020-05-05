@@ -5,8 +5,8 @@ use serenity::{
 };
 
 #[allow(dead_code)]
-pub fn text_to_voice(channel: GuildChannel) -> Option<ChannelId> {
-    let topic = channel.topic?;
+pub fn text_to_voice(channel: &GuildChannel) -> Option<ChannelId> {
+    let topic = channel.topic.clone()?;
     let mut split = topic.split("&");
     split.next()?;
     let vc_id = split.next()?.parse::<u64>().ok()?;
@@ -17,23 +17,18 @@ pub fn text_to_voice(channel: GuildChannel) -> Option<ChannelId> {
     }
 }
 
-pub fn voice_to_text(
+pub async fn voice_to_text(
     ctx: &Context,
     guild_id: GuildId,
     voice_channel: ChannelId,
 ) -> Option<ChannelId> {
-    trace!("voice to text start");
-    for (channel_id, guild_channel) in guild_id.channels(&ctx).ok()? {
+    for (channel_id, guild_channel) in guild_id.channels(ctx).await.ok()? {
         if let Some(topic) = guild_channel.topic {
-            trace!("has topic");
             let mut split = topic.split("&");
             split.next();
             if let Some(topic_id) = split.next() {
-                trace!("has id");
                 if let Ok(topic_id) = topic_id.parse::<u64>() {
-                    trace!("id is u64");
                     if topic_id == voice_channel.0 {
-                        trace!("voice to text end found");
                         return Some(channel_id);
                     }
                 }
