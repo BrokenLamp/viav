@@ -67,14 +67,16 @@ pub fn voice_create(
     trace!("get default perms");
     let default_perms = (&voice_channel.permission_overwrites)
         .into_iter()
-        .find(|p| p.kind == PermissionOverwriteType::Role(RoleId(guild_id.0)))?;
+        .find(|p| p.kind == PermissionOverwriteType::Role(RoleId(guild_id.0)))
+        .map(|p| (p.allow, p.deny))
+        .unwrap_or((Permissions::READ_MESSAGES, Permissions::empty()));
 
     trace!("construct topic data");
     let topic_data = TopicData {
         voice_channel: voice_channel_id,
         owner: user_id,
-        allow: default_perms.allow,
-        deny: default_perms.deny,
+        allow: default_perms.0,
+        deny: default_perms.1,
     };
 
     trace!("create text channel");
