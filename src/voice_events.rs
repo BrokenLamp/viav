@@ -7,7 +7,8 @@ use serenity::{
         permissions::Permissions,
         prelude::*,
     },
-    prelude::Context,
+    prelude::*,
+    utils::Colour,
 };
 
 pub async fn on_join(
@@ -27,6 +28,11 @@ pub async fn on_join(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
+            let user = user_id.to_user(ctx).await.ok()?;
+            text_channel
+                .send_message(ctx, |c| c.content(format!("_**{}** joined_", user.name)))
+                .await
+                .ok();
             trace!("create permission start");
             text_channel
                 .create_permission(
@@ -63,6 +69,11 @@ pub async fn on_leave(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
+            let user = user_id.to_user(ctx).await.ok()?;
+            text_channel
+                .send_message(ctx, |c| c.content(format!("_**{}** left_", user.name)))
+                .await
+                .ok();
             text_channel
                 .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
                 .await
