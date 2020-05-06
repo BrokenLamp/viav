@@ -8,7 +8,6 @@ use serenity::{
         prelude::*,
     },
     prelude::*,
-    utils::Colour,
 };
 
 pub async fn on_join(
