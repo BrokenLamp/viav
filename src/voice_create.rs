@@ -128,22 +128,22 @@ pub async fn voice_create(
         delay_for(Duration::from_millis(1500)).await;
         trace!("unpaused.");
 
-        new_channel
-            .create_permission(
-                ctx,
-                &PermissionOverwrite {
-                    allow: Permissions::MANAGE_CHANNELS | Permissions::MOVE_MEMBERS,
-                    deny: Permissions::empty(),
-                    kind: PermissionOverwriteType::Member(user_id),
-                },
-            )
-            .await
-            .ok()?;
-
         duplicate_voice_channel(ctx, guild_id, voice_channel, old_name).await
     };
 
     futures::join!(deck_future, permission_future);
+
+    new_channel
+        .create_permission(
+            ctx,
+            &PermissionOverwrite {
+                allow: Permissions::MANAGE_CHANNELS | Permissions::MOVE_MEMBERS,
+                deny: Permissions::empty(),
+                kind: PermissionOverwriteType::Member(user_id),
+            },
+        )
+        .await
+        .ok()?;
 
     trace!("voice_create end");
 
