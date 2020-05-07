@@ -9,11 +9,15 @@ edition = "2018"
 [dependencies]
 async-trait = "0.1.30"
 dotenv = "0.15.0"
+futures = "0.3.4"
 lazy_static = "1.4.0"
 log = "0.4.8"
 pretty_env_logger = "0.4"
-tokio  = { version = "0.2", features = ["macros", "rt-threaded"] }
 
 [dependencies.serenity]
 git = "https://github.com/Lakelezz/serenity.git"
 branch = "await"
+
+[dependencies.tokio]
+version = "0.2"
+features = ["macros", "rt-threaded", "time"]
