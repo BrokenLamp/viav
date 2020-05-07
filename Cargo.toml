@@ -18,6 +18,11 @@ pretty_env_logger = "0.4"
 git = "https://github.com/Lakelezz/serenity.git"
 branch = "await"
 
+[dependencies.sqlx]
+version = "0.3"
+default-features = false
+features = [ "runtime-tokio", "json", "macros", "postgres" ]
+
 [dependencies.tokio]
 version = "0.2"
 features = ["macros", "rt-threaded", "time"]

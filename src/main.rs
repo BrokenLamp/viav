@@ -3,10 +3,11 @@ extern crate pretty_env_logger;
 
 use core::time::Duration;
 use dotenv::dotenv;
-use log::trace;
+use log::{info, trace};
 use serenity::client::{bridge::gateway::GatewayIntents, Client};
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::UserId;
+use sqlx::postgres::PgPool;
 use std::env;
 
 mod channel_utils;
@@ -32,7 +33,14 @@ async fn main() {
 
     println!(include_str!("terminal_start.txt"));
 
-    // Login with a bot token from the environment
+    info!("Connecting to Postgres");
+    let pool = PgPool::builder()
+        .max_size(8)
+        .build(&env::var("DATABASE_URL").expect("database url"))
+        .await
+        .unwrap();
+    info!("Connected.");
+
     let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"))
         .event_handler(Handler)
         .cache_update_timeout(Duration::from_secs(10))
