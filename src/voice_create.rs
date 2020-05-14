@@ -116,6 +116,21 @@ pub async fn voice_create(
 
     let deck_future = async {
         trace!("create deck");
+        text_channel
+            .id
+            .send_message(&ctx, |c| {
+                c.embed(|e| {
+                    super::help::create_help_embed(e).field(
+                        "Controls",
+                        "<:lock:684471911920566281> - Lock voice channel\n
+                        <:eye:684471928739725376> - Hide voice channel\n
+                        <:alert:684470685430448128> - Mark text channel NSFW\n",
+                        false,
+                    )
+                })
+            })
+            .await
+            .ok()?;
         deck::create_deck(ctx, text_channel.id, new_name, user_id)
             .await?
             .pin(ctx)

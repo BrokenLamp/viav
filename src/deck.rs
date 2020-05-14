@@ -1,4 +1,3 @@
-use super::help;
 use super::MASTER_USER;
 use crate::channel_utils::TopicData;
 use serenity::model::prelude::{
@@ -68,19 +67,6 @@ pub async fn on_deck_reaction(
             text_channel.edit(ctx, |e| e.nsfw(is_add)).await.ok();
         }
 
-        "help" => {
-            if is_add {
-                help::send_help(&ctx, text_channel.id).await;
-
-                reaction.delete(&ctx.http).await.ok();
-
-                let mut my_reaction = reaction.clone();
-
-                my_reaction.user_id = ctx.cache.read().await.user.id;
-                my_reaction.delete(&ctx.http).await.ok();
-            }
-        }
-
         _ => {}
     }
 
@@ -101,8 +87,7 @@ pub async fn create_deck(
                         .icon_url("https://cdn.discordapp.com/attachments/451092625894932493/681741191313883186/Viav.png")
                         .url("https://viav.app/")
                 })
-                .field("Like Viav?", "[` Vote on Top.gg `](https://top.gg/bot/446151195338473485/vote)", true)
-                .field("Owner", format!("<@{}>", user_id.0), true)
+                .field("Channel Owner", format!("<@{}>", user_id.0), true)
                 .colour(Colour::from_rgb(103, 58, 183))
             })
             .reactions(vec![
@@ -120,11 +105,6 @@ pub async fn create_deck(
                     animated: false,
                     id: EmojiId(684470685430448128),
                     name: Some(String::from("alert")),
-                },
-                ReactionType::Custom {
-                    animated: false,
-                    id: EmojiId(684471126130425935),
-                    name: Some(String::from("help")),
                 },
             ])
         })
