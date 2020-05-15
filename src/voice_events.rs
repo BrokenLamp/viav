@@ -27,9 +27,8 @@ pub async fn on_join(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
-            let user = user_id.to_user(ctx).await.ok()?;
             text_channel
-                .send_message(ctx, |c| c.content(format!("_**{}** joined_", user.name)))
+                .send_message(ctx, |c| c.content(format!("_**<@{}>** joined_", user_id.0)))
                 .await
                 .ok();
             trace!("create permission start");
@@ -68,13 +67,12 @@ pub async fn on_leave(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
-            let user = user_id.to_user(ctx).await.ok()?;
             text_channel
-                .send_message(ctx, |c| c.content(format!("_**{}** left_", user.name)))
+                .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
                 .await
                 .ok();
             text_channel
-                .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
+                .send_message(ctx, |c| c.content(format!("_**<@{}>** left_", user_id.0)))
                 .await
                 .ok();
         }
