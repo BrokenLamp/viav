@@ -8,6 +8,7 @@ use serenity::{
         prelude::*,
     },
     prelude::*,
+    utils::Colour,
 };
 
 pub async fn on_join(
@@ -27,10 +28,7 @@ pub async fn on_join(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
-            text_channel
-                .send_message(ctx, |c| c.content(format!("_**<@{}>** joined_", user_id.0)))
-                .await
-                .ok();
+            send_join_leave_message(ctx, text_channel, user_id, guild_id, "joined").await;
             trace!("create permission start");
             text_channel
                 .create_permission(
@@ -71,12 +69,35 @@ pub async fn on_leave(
                 .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
                 .await
                 .ok();
-            text_channel
-                .send_message(ctx, |c| c.content(format!("_**<@{}>** left_", user_id.0)))
-                .await
-                .ok();
+            send_join_leave_message(ctx, text_channel, user_id, guild_id, "left").await;
         }
     }
 
     Some(())
+}
+
+async fn send_join_leave_message(
+    ctx: &Context,
+    text_channel: ChannelId,
+    user_id: UserId,
+    guild_id: GuildId,
+    message: &str,
+) -> Option<Message> {
+    let user = user_id.to_user(ctx).await.ok()?;
+    let username = user
+        .nick_in(ctx, guild_id)
+        .await
+        .unwrap_or(user.name.clone());
+    text_channel
+        .send_message(ctx, |c| {
+            c.embed(|e| {
+                e.author(|a| {
+                    a.name(format!("{} - {}", username, message))
+                        .icon_url(user.face())
+                })
+                .colour(Colour::from_rgb(103, 58, 183))
+            })
+        })
+        .await
+        .ok()
 }
