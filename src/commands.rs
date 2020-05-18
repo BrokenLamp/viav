@@ -37,7 +37,7 @@ async fn controls(ctx: &Context, msg: &Message) -> CommandResult {
     match controls_command(&ctx, msg).await {
         Some(_) => Ok(()),
         None => {
-            msg.reply(ctx, "Error").await?;
+            msg.reply(ctx, "This command can only be used in a `-viav-` text channel.\nTry `-viav help` to see how it works!").await?;
             Ok(())
         }
     }

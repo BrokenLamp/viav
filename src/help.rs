@@ -14,7 +14,8 @@ pub fn create_help_embed(create_embed: &mut CreateEmbed) -> &mut CreateEmbed {
             .url("https://viav.app/")
     })
     .description("**Infinite Voice Channels**\n\n\
-        Viav will automatically create voice channels when they're needed, and delete them when they're not.")
+        Viav will automatically create voice channels when they're needed, and delete them when they're not.\n\n\
+        Join an empty voice channel to get started!")
     .field(
         "Commands",
         "-viav help
@@ -23,11 +24,11 @@ pub fn create_help_embed(create_embed: &mut CreateEmbed) -> &mut CreateEmbed {
     )
     .field(
         "Helpful Links",
-        "[**` Invite `**](https://discordapp.com/oauth2/authorize?client_id=446151195338473485&permissions=8&scope=bot) \
-        [**` Website `**](https://viav.app/) \
+        "[**` Website `**](https://viav.app/) \
         [**` Donate `**](https://donatebot.io/checkout/450361438549311499) \
         [**` Top.gg `**](https://top.gg/bot/446151195338473485/vote) \
         [**` Support `**](https://discord.gg/6J27ETD) \
+        [**` Get Viav `**](https://discordapp.com/oauth2/authorize?client_id=446151195338473485&permissions=8&scope=bot) \
         ",
         false
     )
