@@ -1,5 +1,5 @@
 use super::deck;
-use crate::channel_utils::TopicData;
+use crate::channel_utils::{voice_to_text, TopicData};
 use lazy_static::lazy_static;
 use log::trace;
 use serenity::model::channel::ChannelType;
@@ -33,6 +33,10 @@ pub async fn voice_create(
     trace!("out of guild_cached");
 
     if voice_channel.name.starts_with("&") {
+        return None;
+    }
+
+    if let Some(_) = voice_to_text(ctx, guild_id, voice_channel.id).await {
         return None;
     }
 
