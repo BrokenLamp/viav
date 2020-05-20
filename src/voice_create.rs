@@ -11,11 +11,11 @@ use serenity::model::prelude::GuildId;
 use serenity::model::prelude::RoleId;
 use serenity::model::prelude::UserId;
 use serenity::prelude::Context;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicU8, Ordering};
 use tokio::time::{delay_for, Duration};
 
 lazy_static! {
-    static ref ID: Mutex<u8> = Mutex::new(0);
+    static ref ID: AtomicU8 = AtomicU8::new(0);
 }
 
 pub async fn voice_create(
@@ -36,15 +36,7 @@ pub async fn voice_create(
         return None;
     }
 
-    trace!("doesn't start with &");
-
-    let id = {
-        trace!("lock   id");
-        let mut lock = ID.lock().ok()?;
-        *lock = lock.overflowing_add(1).0;
-        *lock
-    };
-    trace!("unlock id");
+    let id = ID.fetch_add(1, Ordering::Relaxed);
 
     let old_name = voice_channel.name.clone();
     let new_name = format!("{} / {}", old_name, id);
