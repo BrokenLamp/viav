@@ -36,15 +36,14 @@ async fn main() {
     let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"))
         .event_handler(Handler)
         .cache_update_timeout(Duration::from_secs(10))
-        .intents(
-            GatewayIntents::GUILDS
-                | GatewayIntents::GUILD_VOICE_STATES
-                | GatewayIntents::GUILD_MESSAGES
-                | GatewayIntents::GUILD_MESSAGE_REACTIONS
-                | GatewayIntents::GUILD_INTEGRATIONS
-                | GatewayIntents::GUILD_PRESENCES
-                | GatewayIntents::GUILD_EMOJIS,
-        )
+        // .intents(
+        //     GatewayIntents::GUILDS
+        //         | GatewayIntents::GUILD_VOICE_STATES
+        //         | GatewayIntents::GUILD_MESSAGES
+        //         | GatewayIntents::GUILD_MESSAGE_REACTIONS
+        //         | GatewayIntents::GUILD_INTEGRATIONS
+        //         | GatewayIntents::GUILD_EMOJIS,
+        // )
         .framework(
             StandardFramework::new()
                 .configure(|c| c.prefix("-viav "))
