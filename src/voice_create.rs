@@ -26,7 +26,7 @@ pub async fn voice_create(
 ) -> Option<()> {
     trace!("voice_create start");
     if let Some(guild) = guild_id.to_guild_cached(ctx).await {
-        if Some(voice_channel.id) == guild.read().await.afk_channel_id {
+        if Some(voice_channel.id) == guild.afk_channel_id {
             return None;
         }
     }
@@ -78,7 +78,7 @@ pub async fn voice_create(
         PermissionOverwrite {
             allow: Permissions::all(),
             deny: Permissions::empty(),
-            kind: PermissionOverwriteType::Member(ctx.cache.read().await.user.id),
+            kind: PermissionOverwriteType::Member(ctx.cache.current_user().await.id),
         },
     ];
     let text_channel = guild_id

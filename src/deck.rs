@@ -140,15 +140,15 @@ pub async fn get_deck_reaction_info(
         .await
         .ok()?;
 
-    let is_channel_owner = owner.id == reaction.user_id;
-    let is_master_user = MASTER_USER == reaction.user_id;
+    let is_channel_owner = owner.id == reaction.user_id?;
+    let is_master_user = MASTER_USER == reaction.user_id?;
     let is_server_admin = {
         reaction
             .channel(ctx)
             .await
             .ok()?
             .guild()?
-            .permissions_for_user(ctx, reaction.user_id)
+            .permissions_for_user(ctx, reaction.user_id?)
             .await
             .ok()?
             .manage_channels()

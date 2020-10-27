@@ -4,7 +4,7 @@ extern crate pretty_env_logger;
 use core::time::Duration;
 use dotenv::dotenv;
 use log::trace;
-use serenity::client::{bridge::gateway::GatewayIntents, Client};
+use serenity::client::Client;
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::UserId;
 use std::env;
@@ -33,7 +33,7 @@ async fn main() {
     println!(include_str!("terminal_start.txt"));
 
     // Login with a bot token from the environment
-    let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"))
+    let mut client = Client::builder(&env::var("DISCORD_TOKEN").expect("token"))
         .event_handler(Handler)
         .cache_update_timeout(Duration::from_secs(10))
         // .intents(
