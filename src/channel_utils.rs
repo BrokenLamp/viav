@@ -1,8 +1,5 @@
 use log::trace;
-use serenity::{
-    model::prelude::{ChannelId, GuildChannel, GuildId, Permissions, UserId},
-    prelude::Context,
-};
+use serenity::{client::Cache, model::prelude::{ChannelId, GuildChannel, GuildId, Permissions, UserId}, prelude::Context};
 
 #[allow(dead_code)]
 pub fn text_to_voice(channel: &GuildChannel) -> Option<ChannelId> {
@@ -37,6 +34,34 @@ pub async fn voice_to_text(
     }
     trace!("voice to text end not found");
     None
+}
+
+pub async fn number_of_connected_users(
+    cache: impl AsRef<Cache>,
+    guild_id: GuildId,
+    voice_channel: ChannelId,
+) -> Option<u32> {
+    let cache = cache.as_ref();
+    let guild = cache
+        .guild(guild_id)
+        .await?;
+
+    Some(guild
+        .voice_states
+        .values()
+        .fold(0, |acc, v| {
+            v.channel_id
+                .map(
+                    |c| {
+                        if c == voice_channel {
+                            acc + 1
+                        } else {
+                            acc
+                        }
+                    },
+                )
+                .unwrap_or(acc)
+        }))
 }
 
 pub struct TopicData {

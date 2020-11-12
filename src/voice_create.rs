@@ -24,7 +24,6 @@ pub async fn voice_create(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
-    trace!("voice_create start");
     if let Some(guild) = guild_id.to_guild_cached(ctx).await {
         if Some(voice_channel.id) == guild.afk_channel_id {
             return None;

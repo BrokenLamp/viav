@@ -1,5 +1,6 @@
+use crate::channel_utils::number_of_connected_users;
+
 use super::{channel_utils, voice_create, voice_destroy};
-use log::trace;
 use serenity::{
     model::{
         channel::{GuildChannel, PermissionOverwrite, PermissionOverwriteType},
@@ -17,19 +18,15 @@ pub async fn on_join(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
-    let num_members = voice_channel.members(ctx).await.ok()?.len();
-    trace!("{}", num_members);
+    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id).await?;
 
     if num_members == 1 {
-        trace!("num_members == 1");
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id).await?;
     } else {
-        trace!("num_members != 1");
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
             send_join_leave_message(ctx, text_channel, user_id, guild_id, "joined").await;
-            trace!("create permission start");
             text_channel
                 .create_permission(
                     ctx,
@@ -41,11 +38,8 @@ pub async fn on_join(
                 )
                 .await
                 .ok();
-            trace!("create permission end");
         }
     }
-
-    trace!("on_join end");
 
     Some(())
 }
@@ -56,8 +50,7 @@ pub async fn on_leave(
     voice_channel: &GuildChannel,
     user_id: UserId,
 ) -> Option<()> {
-    let num_members = voice_channel.members(ctx).await.ok()?.len();
-    trace!("{}", num_members);
+    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id).await?;
 
     if num_members == 0 {
         voice_destroy::voice_destroy(ctx, guild_id, voice_channel.id).await;
