@@ -4,7 +4,7 @@ extern crate pretty_env_logger;
 use core::time::Duration;
 use dotenv::dotenv;
 use log::trace;
-use serenity::client::Client;
+use serenity::client::{bridge::gateway::GatewayIntents, Client};
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::UserId;
 use std::env;
@@ -36,14 +36,14 @@ async fn main() {
     let mut client = Client::builder(&env::var("DISCORD_TOKEN").expect("token"))
         .event_handler(Handler)
         .cache_update_timeout(Duration::from_secs(10))
-        // .intents(
-        //     GatewayIntents::GUILDS
-        //         | GatewayIntents::GUILD_VOICE_STATES
-        //         | GatewayIntents::GUILD_MESSAGES
-        //         | GatewayIntents::GUILD_MESSAGE_REACTIONS
-        //         | GatewayIntents::GUILD_INTEGRATIONS
-        //         | GatewayIntents::GUILD_EMOJIS,
-        // )
+        .intents(
+            GatewayIntents::GUILDS
+                | GatewayIntents::GUILD_VOICE_STATES
+                | GatewayIntents::GUILD_MESSAGES
+                | GatewayIntents::GUILD_MESSAGE_REACTIONS
+                | GatewayIntents::GUILD_INTEGRATIONS
+                | GatewayIntents::GUILD_EMOJIS,
+        )
         .framework(
             StandardFramework::new()
                 .configure(|c| c.prefix("-viav "))
