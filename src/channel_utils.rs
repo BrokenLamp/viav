@@ -1,6 +1,11 @@
-use log::trace;
-use serenity::{client::Cache, model::prelude::{ChannelId, GuildChannel, GuildId, Permissions, UserId}, prelude::Context};
+use log::debug;
+use serenity::{
+    client::Cache,
+    model::prelude::{ChannelId, GuildChannel, GuildId, Permissions, UserId},
+    prelude::Context,
+};
 
+/// Given a text channel, returns the corresponding voice channel ID
 #[allow(dead_code)]
 pub fn text_to_voice(channel: &GuildChannel) -> Option<ChannelId> {
     let topic = channel.topic.clone()?;
@@ -14,6 +19,7 @@ pub fn text_to_voice(channel: &GuildChannel) -> Option<ChannelId> {
     }
 }
 
+/// Given a voice channel ID returns the corresponding text channel ID
 pub async fn voice_to_text(
     ctx: &Context,
     guild_id: GuildId,
@@ -32,7 +38,7 @@ pub async fn voice_to_text(
             }
         }
     }
-    trace!("voice to text end not found");
+    debug!("voice to text end not found");
     None
 }
 
@@ -42,26 +48,13 @@ pub async fn number_of_connected_users(
     voice_channel: ChannelId,
 ) -> Option<u32> {
     let cache = cache.as_ref();
-    let guild = cache
-        .guild(guild_id)
-        .await?;
+    let guild = cache.guild(guild_id).await?;
 
-    Some(guild
-        .voice_states
-        .values()
-        .fold(0, |acc, v| {
-            v.channel_id
-                .map(
-                    |c| {
-                        if c == voice_channel {
-                            acc + 1
-                        } else {
-                            acc
-                        }
-                    },
-                )
-                .unwrap_or(acc)
-        }))
+    Some(guild.voice_states.values().fold(0, |acc, v| {
+        v.channel_id
+            .map(|c| if c == voice_channel { acc + 1 } else { acc })
+            .unwrap_or(acc)
+    }))
 }
 
 pub struct TopicData {

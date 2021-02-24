@@ -1,6 +1,7 @@
 use crate::channel_utils::number_of_connected_users;
 
 use super::{channel_utils, voice_create, voice_destroy};
+use anyhow::Context;
 use serenity::{
     model::{
         channel::{GuildChannel, PermissionOverwrite, PermissionOverwriteType},
@@ -8,17 +9,18 @@ use serenity::{
         permissions::Permissions,
         prelude::*,
     },
-    prelude::*,
     utils::Colour,
 };
 
 pub async fn on_join(
-    ctx: &Context,
+    ctx: &serenity::prelude::Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
     user_id: UserId,
-) -> Option<()> {
-    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id).await?;
+) -> anyhow::Result<()> {
+    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id)
+        .await
+        .ok_or(anyhow::anyhow!("Could not get number of connected users"))?;
 
     if num_members == 1 {
         voice_create::voice_create(ctx, guild_id, voice_channel, user_id).await?;
@@ -26,8 +28,8 @@ pub async fn on_join(
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
         {
-            send_join_leave_message(ctx, text_channel, user_id, guild_id, "joined").await;
-            text_channel
+            send_join_leave_message(ctx, text_channel, user_id, guild_id, "joined").await?;
+            let result = text_channel
                 .create_permission(
                     ctx,
                     &PermissionOverwrite {
@@ -36,24 +38,40 @@ pub async fn on_join(
                         kind: PermissionOverwriteType::Member(user_id),
                     },
                 )
-                .await
-                .ok();
+                .await;
+            if let Err(err) = result {
+                text_channel
+                    .send_message(ctx, |c| {
+                        c.embed(|e| {
+                            e.colour(Colour::from_rgb(200, 50, 80))
+                                .description(format!("{:?}", err))
+                        })
+                    })
+                    .await
+                    .context("Join / leave message")?;
+                anyhow::bail!(err);
+            }
         }
     }
 
-    Some(())
+    Ok(())
 }
 
 pub async fn on_leave(
-    ctx: &Context,
+    ctx: &serenity::prelude::Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
     user_id: UserId,
-) -> Option<()> {
-    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id).await?;
+) -> anyhow::Result<()> {
+    let num_members = number_of_connected_users(ctx, guild_id, voice_channel.id)
+        .await
+        .ok_or(anyhow::anyhow!(
+            "Could not get number of connected users for voice channel: {}",
+            voice_channel.id
+        ))?;
 
     if num_members == 0 {
-        voice_destroy::voice_destroy(ctx, guild_id, voice_channel.id).await;
+        voice_destroy::voice_destroy(ctx, guild_id, voice_channel.id).await?;
     } else {
         if let Some(text_channel) =
             channel_utils::voice_to_text(ctx, guild_id, voice_channel.id).await
@@ -62,26 +80,26 @@ pub async fn on_leave(
                 .delete_permission(ctx, PermissionOverwriteType::Member(user_id))
                 .await
                 .ok();
-            send_join_leave_message(ctx, text_channel, user_id, guild_id, "left").await;
+            send_join_leave_message(ctx, text_channel, user_id, guild_id, "left").await?;
         }
     }
 
-    Some(())
+    Ok(())
 }
 
 async fn send_join_leave_message(
-    ctx: &Context,
+    ctx: &serenity::prelude::Context,
     text_channel: ChannelId,
     user_id: UserId,
     guild_id: GuildId,
     message: &str,
-) -> Option<Message> {
-    let user = user_id.to_user(ctx).await.ok()?;
+) -> anyhow::Result<Message> {
+    let user = user_id.to_user(ctx).await?;
     let username = user
         .nick_in(ctx, guild_id)
         .await
         .unwrap_or(user.name.clone());
-    text_channel
+    Ok(text_channel
         .send_message(ctx, |c| {
             c.embed(|e| {
                 e.author(|a| {
@@ -92,5 +110,5 @@ async fn send_join_leave_message(
             })
         })
         .await
-        .ok()
+        .context("Join / leave message")?)
 }

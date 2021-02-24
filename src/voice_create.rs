@@ -1,62 +1,76 @@
 use super::deck;
 use crate::channel_utils::{voice_to_text, TopicData};
+use anyhow::Context;
 use lazy_static::lazy_static;
-use log::trace;
-use serenity::model::channel::ChannelType;
-use serenity::model::channel::PermissionOverwrite;
-use serenity::model::channel::PermissionOverwriteType;
-use serenity::model::permissions::Permissions;
-use serenity::model::prelude::GuildChannel;
-use serenity::model::prelude::GuildId;
-use serenity::model::prelude::RoleId;
-use serenity::model::prelude::UserId;
-use serenity::prelude::Context;
-use std::sync::atomic::{AtomicU8, Ordering};
-use tokio::time::{delay_for, Duration};
+use log::debug;
+use serenity::model::{
+    channel::{ChannelType, PermissionOverwrite, PermissionOverwriteType},
+    permissions::Permissions,
+    prelude::{GuildChannel, GuildId, RoleId, UserId},
+};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    sync::atomic::{AtomicU8, Ordering},
+};
+use tokio::time::{sleep, Duration};
 
 lazy_static! {
     static ref ID: AtomicU8 = AtomicU8::new(0);
 }
 
 pub async fn voice_create(
-    ctx: &Context,
+    ctx: &serenity::prelude::Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
     user_id: UserId,
-) -> Option<()> {
+) -> anyhow::Result<()> {
     if let Some(guild) = guild_id.to_guild_cached(ctx).await {
         if Some(voice_channel.id) == guild.afk_channel_id {
-            return None;
+            return Ok(());
         }
     }
-    trace!("out of guild_cached");
+    debug!("out of guild_cached");
 
     if voice_channel.name.starts_with("&") {
-        return None;
+        return Ok(());
     }
 
-    if let Some(_) = voice_to_text(ctx, guild_id, voice_channel.id).await {
-        return None;
+    if let Some(tc) = voice_to_text(ctx, guild_id, voice_channel.id).await {
+        tc.send_message(ctx, |m| {
+            m.content(
+                "Tried to create new voice channel but it already exists. Using this text channel.",
+            )
+        })
+        .await?;
+        return Ok(());
     }
 
     let id = ID.fetch_add(1, Ordering::Relaxed);
+    let mut hasher = DefaultHasher::new();
+    id.hash(&mut hasher);
+    let mut id = format!("{:x}", hasher.finish());
+    id.truncate(4);
+
+    let viav_user_id = ctx.cache.current_user().await.id;
 
     let old_name = voice_channel.name.clone();
     let new_name = format!("{} / {}", old_name, id);
     let voice_channel_id = voice_channel.id;
-    let new_channel = voice_channel_id
+    debug!("create new channel");
+    let mut new_channel = voice_channel_id
         .edit(ctx, |c| c.name::<&str>(new_name.as_ref()))
         .await
-        .ok()?;
+        .with_context(|| format!("Editting channel: {}", voice_channel_id))?;
 
-    trace!("get default perms");
+    debug!("get default perms");
     let default_perms = (&voice_channel.permission_overwrites)
         .into_iter()
         .find(|p| p.kind == PermissionOverwriteType::Role(RoleId(guild_id.0)))
         .map(|p| (p.allow, p.deny))
         .unwrap_or((Permissions::READ_MESSAGES, Permissions::empty()));
 
-    trace!("construct topic data");
+    debug!("construct topic data");
     let topic_data = TopicData {
         voice_channel: voice_channel_id,
         owner: user_id,
@@ -64,7 +78,7 @@ pub async fn voice_create(
         deny: default_perms.1,
     };
 
-    trace!("create text channel");
+    debug!("create text channel");
     let channel_type = ChannelType::Text;
     let permissions = vec![
         // @everyone
@@ -77,7 +91,7 @@ pub async fn voice_create(
         PermissionOverwrite {
             allow: Permissions::all(),
             deny: Permissions::empty(),
-            kind: PermissionOverwriteType::Member(ctx.cache.current_user().await.id),
+            kind: PermissionOverwriteType::Member(viav_user_id),
         },
     ];
     let text_channel = guild_id
@@ -94,9 +108,9 @@ pub async fn voice_create(
             create_channel
         })
         .await
-        .ok()?;
+        .context("Create text channel")?;
 
-    trace!("set channel perms");
+    debug!("set channel perms");
     text_channel
         .create_permission(
             ctx,
@@ -107,10 +121,10 @@ pub async fn voice_create(
             },
         )
         .await
-        .ok()?;
+        .context("Add permissions to text channel")?;
 
     let deck_future = async {
-        trace!("create deck");
+        debug!("create deck");
         text_channel
             .id
             .send_message(&ctx, |c| {
@@ -125,24 +139,41 @@ pub async fn voice_create(
                 })
             })
             .await
-            .ok()?;
+            .context("Send controls")?;
         deck::create_deck(ctx, text_channel.id, new_name, user_id)
-            .await?
+            .await
+            .context("Create deck")?
             .pin(ctx)
             .await
-            .ok()
+            .context("Pin deck")?;
+        Ok::<(), anyhow::Error>(())
     };
 
-    let permission_future = async {
-        trace!("pausing.");
-        delay_for(Duration::from_millis(1500)).await;
-        trace!("unpaused.");
+    let voice_duplicate_future = async {
+        debug!("pausing.");
+        sleep(Duration::from_millis(1500)).await;
+        debug!("unpaused.");
 
-        duplicate_voice_channel(ctx, guild_id, voice_channel, old_name).await
+        duplicate_voice_channel(ctx, guild_id, voice_channel, &old_name).await
     };
 
-    futures::join!(deck_future, permission_future);
+    let (_, permission) = futures::join!(deck_future, voice_duplicate_future);
 
+    if let Err(err) = permission {
+        new_channel.edit(ctx, |c| c.name(&old_name)).await?;
+        return Err(err);
+    }
+
+    new_channel
+        .create_permission(
+            ctx,
+            &PermissionOverwrite {
+                allow: Permissions::all(),
+                deny: Permissions::empty(),
+                kind: PermissionOverwriteType::Member(viav_user_id),
+            },
+        )
+        .await?;
     new_channel
         .create_permission(
             ctx,
@@ -152,26 +183,25 @@ pub async fn voice_create(
                 kind: PermissionOverwriteType::Member(user_id),
             },
         )
-        .await
-        .ok()?;
+        .await?;
 
-    trace!("voice_create end");
+    debug!("voice_create end");
 
-    Some(())
+    Ok(())
 }
 
-async fn duplicate_voice_channel(
-    ctx: &Context,
+async fn duplicate_voice_channel<S: ToString>(
+    ctx: &serenity::prelude::Context,
     guild_id: GuildId,
     voice_channel: &GuildChannel,
-    name: String,
-) -> Option<GuildChannel> {
-    trace!("duplicate_voice_channel start");
+    name: S,
+) -> anyhow::Result<GuildChannel> {
+    debug!("duplicate_voice_channel start");
     let channel = guild_id
         .create_channel(ctx, |c| {
             let mut create_channel = c
                 .kind(ChannelType::Voice)
-                .name(name)
+                .name(name.to_string())
                 .permissions(voice_channel.permission_overwrites.clone())
                 .bitrate(voice_channel.bitrate.unwrap_or(64) as u32);
 
@@ -185,8 +215,7 @@ async fn duplicate_voice_channel(
 
             create_channel
         })
-        .await
-        .ok();
-    trace!("duplicate_voice_channel end");
-    channel
+        .await?;
+    debug!("duplicate_voice_channel end");
+    Ok(channel)
 }

@@ -1,27 +1,34 @@
 use super::MASTER_USER;
 use crate::channel_utils::TopicData;
-use serenity::model::prelude::{
-    ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
-    Permissions, Reaction, ReactionType, RoleId, User, UserId,
+use anyhow::Context;
+use serenity::{
+    model::prelude::{
+        ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
+        Permissions, Reaction, ReactionType, RoleId, User, UserId,
+    },
+    utils::Colour,
 };
-use serenity::prelude::Context;
-use serenity::utils::Colour;
 
 pub async fn on_deck_reaction(
-    ctx: &Context,
+    ctx: &serenity::client::Context,
     reaction: &Reaction,
     is_add: bool,
     voice_channel: &mut GuildChannel,
     text_channel: &mut GuildChannel,
     _owner: User,
-) -> Option<()> {
+) -> anyhow::Result<()> {
     let emoji_name = match &reaction.emoji {
         ReactionType::Custom {
             animated: _,
             id: _,
             name,
-        } => name.clone()?,
-        _ => return None,
+        } => name.clone(),
+        _ => return Ok(()),
+    };
+
+    let emoji_name = match emoji_name {
+        Some(name) => name,
+        None => return Ok(()),
     };
 
     match emoji_name.as_str() {
@@ -29,7 +36,7 @@ pub async fn on_deck_reaction(
             voice_channel
                 .edit(ctx, |e| e.user_limit(is_add as u64))
                 .await
-                .ok();
+                .context("Failed to lock voice channel")?;
         }
 
         "eye" => {
@@ -60,21 +67,24 @@ pub async fn on_deck_reaction(
             voice_channel
                 .create_permission(ctx, &permissions)
                 .await
-                .ok();
+                .context("Failed to hide voice channel")?;
         }
 
         "alert" => {
-            text_channel.edit(ctx, |e| e.nsfw(is_add)).await.ok();
+            text_channel
+                .edit(ctx, |e| e.nsfw(is_add))
+                .await
+                .context("Failed to set text channel to NSFW")?;
         }
 
         _ => {}
     }
 
-    Some(())
+    Ok(())
 }
 
 pub async fn create_deck(
-    ctx: &Context,
+    ctx: &serenity::client::Context,
     channel_id: ChannelId,
     deck_name: String,
     user_id: UserId,
@@ -113,7 +123,7 @@ pub async fn create_deck(
 }
 
 pub async fn get_deck_reaction_info(
-    ctx: &Context,
+    ctx: &serenity::client::Context,
     reaction: &Reaction,
 ) -> Option<(GuildChannel, GuildChannel, User)> {
     if reaction.user(ctx).await.ok()?.bot {
