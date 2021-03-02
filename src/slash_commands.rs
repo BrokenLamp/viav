@@ -88,14 +88,13 @@ pub async fn register_slash_commands(
 ) -> Result<(), serenity::Error> {
     for command in SLASH_COMMANDS.iter() {
         ctx.http
-            .create_guild_application_command(
+            .create_global_application_command(
                 ctx.http
                     .get_current_application_info()
                     .await
                     .map(|op| op.id)
                     .unwrap()
                     .0,
-                444771470254669834,
                 command,
             )
             .await?;
