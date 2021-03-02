@@ -1,7 +1,10 @@
-use crate::channel_utils::{text_to_voice, voice_to_text};
-
 use super::deck;
 use super::voice_events;
+use crate::error_display::HandleError;
+use crate::{
+    channel_utils::{text_to_voice, voice_to_text},
+    slash_commands,
+};
 use anyhow::Context;
 use async_trait::async_trait;
 use log::info;
@@ -10,6 +13,7 @@ use serenity::{
         channel::{ChannelType, GuildChannel},
         gateway::{Activity, Ready},
         id::{GuildId, UserId},
+        interactions::Interaction,
         prelude::Reaction,
         voice::VoiceState,
     },
@@ -22,6 +26,9 @@ pub struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, ctx: serenity::client::Context, _: Ready) {
         ctx.set_activity(Activity::listening("-viav help")).await;
+        slash_commands::register_slash_commands(&ctx)
+            .await
+            .expect("Register slash commands");
         info!("Shard {} - online", ctx.shard_id);
     }
 
@@ -54,10 +61,12 @@ impl EventHandler for Handler {
                     let result =
                         voice_events::on_leave(&ctx, guild_id, &guild_channel, old_user_id)
                             .await
-                            .context("On Leave Error");
-                    if let Err(err) = result {
-                        eprint!("{:?}\n\n", err);
-                    }
+                            .context(format!(
+                                "On Leave Error in {} : {}",
+                                guild_channel.guild_id,
+                                guild_channel.name()
+                            ));
+                    result.handle(&ctx, None).await;
                 }
             }
             if let Some(new_id) = new_id {
@@ -69,47 +78,29 @@ impl EventHandler for Handler {
                 if let Some(guild_channel) = guild_channel {
                     let result = voice_events::on_join(&ctx, guild_id, &guild_channel, new_user_id)
                         .await
-                        .context("On Join Error");
-                    if let Err(err) = result {
-                        eprint!("{:?}\n\n", err);
-                    }
+                        .context(format!(
+                            "On Join Error in {} : {}",
+                            guild_channel.guild_id,
+                            guild_channel.name()
+                        ));
+                    result.handle(&ctx, None).await;
                 }
             }
         }
     }
 
     async fn reaction_add(&self, ctx: serenity::client::Context, reaction: Reaction) {
-        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction).await {
-            let result = deck::on_deck_reaction(&ctx, &reaction, true, &mut vc, &mut tc, owner)
-                .await
-                .context("Reaction Add Error");
-            if let Err(err) = result {
-                let result = tc
-                    .send_message(ctx, |m| m.content(format!("{:?}", err)))
-                    .await
-                    .context("Send error message to channel");
-                if let Err(err) = result {
-                    eprintln!("{:?}", err);
-                }
-            }
-        }
+        deck::on_deck_reaction(&ctx, &reaction, true)
+            .await
+            .handle(&ctx, None)
+            .await;
     }
 
     async fn reaction_remove(&self, ctx: serenity::client::Context, reaction: Reaction) {
-        if let Some((mut vc, mut tc, owner)) = deck::get_deck_reaction_info(&ctx, &reaction).await {
-            let result = deck::on_deck_reaction(&ctx, &reaction, false, &mut vc, &mut tc, owner)
-                .await
-                .context("Reaction Remove Error");
-            if let Err(err) = result {
-                let result = tc
-                    .send_message(ctx, |m| m.content(format!("{:?}", err)))
-                    .await
-                    .context("Send error message to channel");
-                if let Err(err) = result {
-                    eprintln!("{:?}", err);
-                }
-            }
-        }
+        deck::on_deck_reaction(&ctx, &reaction, false)
+            .await
+            .handle(&ctx, None)
+            .await;
     }
 
     async fn channel_delete(&self, ctx: serenity::client::Context, channel: &GuildChannel) {
@@ -119,10 +110,19 @@ impl EventHandler for Handler {
             _ => return,
         };
         if let Some(channel) = other_channel {
-            let result = channel.delete(&ctx).await.context("Delete channel");
-            if let Err(err) = result {
-                eprintln!("{:?}", err);
-            }
+            channel
+                .delete(&ctx)
+                .await
+                .context("Delete channel")
+                .handle(&ctx, None)
+                .await;
         }
+    }
+
+    async fn interaction_create(&self, ctx: serenity::client::Context, interaction: Interaction) {
+        slash_commands::handle_slash_command(&ctx, interaction)
+            .await
+            .handle(&ctx, None)
+            .await;
     }
 }

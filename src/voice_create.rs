@@ -1,5 +1,6 @@
 use super::deck;
-use crate::channel_utils::{voice_to_text, TopicData};
+use crate::channel_utils::voice_to_text;
+use crate::models::TopicData;
 use anyhow::Context;
 use lazy_static::lazy_static;
 use log::debug;

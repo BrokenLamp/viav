@@ -1,11 +1,10 @@
+use std::convert::TryFrom;
+
 use super::MASTER_USER;
-use crate::channel_utils::TopicData;
-use anyhow::Context;
+use crate::{commandable_ops::Operation, models::TopicData};
+use anyhow::{anyhow, bail, Context};
 use serenity::{
-    model::prelude::{
-        ChannelId, EmojiId, GuildChannel, Message, PermissionOverwrite, PermissionOverwriteType,
-        Permissions, Reaction, ReactionType, RoleId, User, UserId,
-    },
+    model::prelude::{ChannelId, EmojiId, Message, Reaction, ReactionType, UserId},
     utils::Colour,
 };
 
@@ -13,72 +12,37 @@ pub async fn on_deck_reaction(
     ctx: &serenity::client::Context,
     reaction: &Reaction,
     is_add: bool,
-    voice_channel: &mut GuildChannel,
-    text_channel: &mut GuildChannel,
-    _owner: User,
 ) -> anyhow::Result<()> {
-    let emoji_name = match &reaction.emoji {
-        ReactionType::Custom {
-            animated: _,
-            id: _,
-            name,
-        } => name.clone(),
-        _ => return Ok(()),
-    };
+    let user = reaction.user(ctx).await?;
 
-    let emoji_name = match emoji_name {
-        Some(name) => name,
-        None => return Ok(()),
-    };
-
-    match emoji_name.as_str() {
-        "lock" => {
-            voice_channel
-                .edit(ctx, |e| e.user_limit(is_add as u64))
-                .await
-                .context("Failed to lock voice channel")?;
-        }
-
-        "eye" => {
-            let permissions = if is_add {
-                PermissionOverwrite {
-                    allow: Permissions::empty(),
-                    deny: Permissions::READ_MESSAGES | Permissions::CONNECT,
-                    kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
-                }
-            } else {
-                text_channel
-                    .topic
-                    .as_ref()
-                    .and_then(|topic| {
-                        let topic_data = TopicData::from_string(topic)?;
-                        Some(PermissionOverwrite {
-                            allow: topic_data.allow,
-                            deny: topic_data.deny,
-                            kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
-                        })
-                    })
-                    .unwrap_or(PermissionOverwrite {
-                        allow: Permissions::READ_MESSAGES,
-                        deny: Permissions::empty(),
-                        kind: PermissionOverwriteType::Role(RoleId(voice_channel.guild_id.0)),
-                    })
-            };
-            voice_channel
-                .create_permission(ctx, &permissions)
-                .await
-                .context("Failed to hide voice channel")?;
-        }
-
-        "alert" => {
-            text_channel
-                .edit(ctx, |e| e.nsfw(is_add))
-                .await
-                .context("Failed to set text channel to NSFW")?;
-        }
-
-        _ => {}
+    if user.bot {
+        return Ok(());
     }
+
+    let text_channel = reaction
+        .channel(ctx)
+        .await?
+        .guild()
+        .context("Get text channel of reaction")?;
+
+    let topic = TopicData::try_from(&text_channel)?;
+
+    let is_channel_owner = topic.owner == user.id;
+    let is_master_user = MASTER_USER == user.id;
+    let is_server_admin = {
+        text_channel
+            .permissions_for_user(ctx, user.id)
+            .await?
+            .manage_channels()
+    };
+
+    if !is_channel_owner && !is_server_admin && !is_master_user {
+        return Ok(());
+    }
+
+    Operation::try_from((reaction, is_add))?
+        .apply(&ctx, user.id, &text_channel)
+        .await?;
 
     Ok(())
 }
@@ -122,51 +86,28 @@ pub async fn create_deck(
         .ok()
 }
 
-pub async fn get_deck_reaction_info(
-    ctx: &serenity::client::Context,
-    reaction: &Reaction,
-) -> Option<(GuildChannel, GuildChannel, User)> {
-    if reaction.user(ctx).await.ok()?.bot {
-        return None;
-    }
+impl TryFrom<(&Reaction, bool)> for Operation {
+    type Error = anyhow::Error;
 
-    let text_channel = { reaction.channel(ctx).await.ok()?.guild()? };
+    fn try_from(data: (&Reaction, bool)) -> anyhow::Result<Self> {
+        let (reaction, is_add) = data;
 
-    let topic = text_channel.topic.as_ref()?.clone();
-    let mut topic = topic.split("&");
+        let emoji_name = match &reaction.emoji {
+            ReactionType::Custom {
+                animated: _,
+                id: _,
+                name,
+            } => name.clone(),
+            _ => bail!("Emoji not custom"),
+        };
 
-    topic.next()?;
+        let emoji_name = emoji_name.context("Emoji name")?;
 
-    let voice_channel = {
-        ChannelId(topic.next()?.parse::<u64>().ok()?)
-            .to_channel(ctx)
-            .await
-            .ok()?
-            .guild()?
-    };
-
-    let owner = UserId(topic.next()?.parse::<u64>().ok()?)
-        .to_user(ctx)
-        .await
-        .ok()?;
-
-    let is_channel_owner = owner.id == reaction.user_id?;
-    let is_master_user = MASTER_USER == reaction.user_id?;
-    let is_server_admin = {
-        reaction
-            .channel(ctx)
-            .await
-            .ok()?
-            .guild()?
-            .permissions_for_user(ctx, reaction.user_id?)
-            .await
-            .ok()?
-            .manage_channels()
-    };
-
-    if is_channel_owner || is_server_admin || is_master_user {
-        Some((voice_channel, text_channel, owner))
-    } else {
-        None
+        match emoji_name.as_str() {
+            "lock" => Ok(Operation::Lock(is_add)),
+            "eye" => Ok(Operation::Hide(is_add)),
+            "alert" => Ok(Operation::NSFW(is_add)),
+            _ => Err(anyhow!("")),
+        }
     }
 }

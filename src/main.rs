@@ -9,10 +9,14 @@ use serenity::model::id::UserId;
 use std::env;
 
 mod channel_utils;
+mod commandable_ops;
 mod commands;
 mod deck;
+mod error_display;
 mod handler;
 mod help;
+mod models;
+mod slash_commands;
 mod voice_create;
 mod voice_destroy;
 mod voice_events;

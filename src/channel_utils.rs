@@ -1,8 +1,12 @@
+use crate::models::TopicData;
+use crate::MASTER_USER;
 use log::debug;
 use serenity::{
     client::Cache,
-    model::prelude::{ChannelId, GuildChannel, GuildId, Permissions, UserId},
-    prelude::Context,
+    model::{
+        id::UserId,
+        prelude::{ChannelId, GuildChannel, GuildId},
+    },
 };
 
 /// Given a text channel, returns the corresponding voice channel ID
@@ -21,7 +25,7 @@ pub fn text_to_voice(channel: &GuildChannel) -> Option<ChannelId> {
 
 /// Given a voice channel ID returns the corresponding text channel ID
 pub async fn voice_to_text(
-    ctx: &Context,
+    ctx: &serenity::client::Context,
     guild_id: GuildId,
     voice_channel: ChannelId,
 ) -> Option<ChannelId> {
@@ -57,28 +61,19 @@ pub async fn number_of_connected_users(
     }))
 }
 
-pub struct TopicData {
-    pub voice_channel: ChannelId,
-    pub owner: UserId,
-    pub allow: Permissions,
-    pub deny: Permissions,
-}
-
-impl TopicData {
-    pub fn from_string(data: &str) -> Option<TopicData> {
-        let mut split = data.split('&');
-        split.next()?;
-        Some(TopicData {
-            voice_channel: ChannelId(split.next()?.parse::<u64>().ok()?),
-            owner: UserId(split.next()?.parse::<u64>().ok()?),
-            allow: Permissions::from_bits_truncate(split.next()?.parse::<u64>().ok()?),
-            deny: Permissions::from_bits_truncate(split.next()?.parse::<u64>().ok()?),
-        })
+/// Checks if a user is allowed to perform tasks in a channel
+pub async fn is_user_perms(
+    ctx: &serenity::client::Context,
+    user_id: UserId,
+    topic: &TopicData,
+    text_channel: &GuildChannel,
+) -> bool {
+    if topic.owner == user_id || MASTER_USER == user_id {
+        return true;
     }
-    pub fn to_string(&self) -> String {
-        format!(
-            "&{}&{}&{}&{}",
-            self.voice_channel.0, self.owner.0, self.allow.bits, self.deny.bits
-        )
-    }
+    text_channel
+        .permissions_for_user(ctx, user_id)
+        .await
+        .map(|p| p.manage_channels())
+        .unwrap_or(false)
 }
