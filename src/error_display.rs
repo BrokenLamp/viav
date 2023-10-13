@@ -16,8 +16,8 @@ impl<T: Send + Sync> HandleError for anyhow::Result<T> {
                     .send_message(ctx, |m| m.content(format!("{:?}", err)))
                     .await
                     .context("Send error message to channel");
-                if let Err(err) = result {
-                    eprintln!("{:?}", err);
+                if let Err(err2) = result {
+                    eprintln!("{:?}\nfrom\n{:?}", err2, err);
                 }
             } else {
                 eprintln!("{:?}", err);

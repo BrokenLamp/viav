@@ -88,9 +88,15 @@ pub async fn voice_create(
             deny: Permissions::READ_MESSAGES,
             kind: PermissionOverwriteType::Role(RoleId::from(guild_id.0)),
         },
+        // @User
+        PermissionOverwrite {
+            allow: Permissions::READ_MESSAGES | Permissions::SEND_MESSAGES,
+            deny: Permissions::empty(),
+            kind: PermissionOverwriteType::Member(user_id),
+        },
         // @Viav
         PermissionOverwrite {
-            allow: Permissions::all(),
+            allow: Permissions::READ_MESSAGES | Permissions::SEND_MESSAGES,
             deny: Permissions::empty(),
             kind: PermissionOverwriteType::Member(viav_user_id),
         },
@@ -110,19 +116,6 @@ pub async fn voice_create(
         })
         .await
         .context("Create text channel")?;
-
-    debug!("set channel perms");
-    text_channel
-        .create_permission(
-            ctx,
-            &PermissionOverwrite {
-                allow: Permissions::READ_MESSAGES,
-                deny: Permissions::empty(),
-                kind: PermissionOverwriteType::Member(user_id),
-            },
-        )
-        .await
-        .context("Add permissions to text channel")?;
 
     let deck_future = async {
         debug!("create deck");
@@ -165,21 +158,21 @@ pub async fn voice_create(
         return Err(err);
     }
 
+    // new_channel
+    //     .create_permission(
+    //         ctx,
+    //         &PermissionOverwrite {
+    //             allow: Permissions::all(),
+    //             deny: Permissions::empty(),
+    //             kind: PermissionOverwriteType::Member(viav_user_id),
+    //         },
+    //     )
+    //     .await?;
     new_channel
         .create_permission(
             ctx,
             &PermissionOverwrite {
-                allow: Permissions::all(),
-                deny: Permissions::empty(),
-                kind: PermissionOverwriteType::Member(viav_user_id),
-            },
-        )
-        .await?;
-    new_channel
-        .create_permission(
-            ctx,
-            &PermissionOverwrite {
-                allow: Permissions::MANAGE_CHANNELS | Permissions::MOVE_MEMBERS,
+                allow: Permissions::MANAGE_CHANNELS,
                 deny: Permissions::empty(),
                 kind: PermissionOverwriteType::Member(user_id),
             },
